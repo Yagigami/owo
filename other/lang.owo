@@ -1,0 +1,27 @@
+import libc;
+
+
+layout L {
+	x: int (3);
+}
+
+func greet(msg: nstring)
+{
+	libc.puts(msg);
+}
+
+// comment
+
+/*
+	multiline
+	comment
+*/
+
+func main(argc: int, argv: nstring@): int
+{
+	let ret: int = 0;
+	greet(>msg = "Hello, world!");
+	libc.puts(>0 = "positional named arguments");
+	return ret;
+}
+

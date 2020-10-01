@@ -1,0 +1,22 @@
+operators:
+prefix:
+	@ ++ -- + - ~ !
+postfix:
+	. () [] ++ --
+cast:
+	as
+multiplication:
+	* / % & << >>
+addition:
+	+ - | ^
+relational:
+	== != <= >=
+logical and:
+	&&
+logical or:
+	||
+assignment:
+	=
+	+= -= |= ^= *= /= %= &= >>= <<=
+ternary:
+	?!

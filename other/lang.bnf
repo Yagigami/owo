@@ -1,0 +1,113 @@
+translation_unit ::= (module_import*) function_definition*
+
+function_definition ::= 'func' identifier '(' parameter_list ')' [ ':' type ] statement_block
+
+parameter_list ::= [ parameter_declaration [ ',' parameter_declaration ]* ]
+parameter_declaration ::= [ identifier ] ':' type
+                        ( | [ identifier ] ':' '...' )
+object_declaration ::= identifier ':' type
+
+statement_block ::= '{' statement* '}'
+statement ::= variable_declaration ';'
+            | statement_block ';'
+	    | basic_statement ';'
+	    | compound_statement
+            | label_statement
+	    | expression ';'
+            ( | closure_definition ';' )
+
+variable_declaration ::= 'let' object_declaration [ '=' expression ]
+
+compound_statement ::= if_statement
+                     | while_statement
+		     | for_statement
+		     | do_statement
+		     ( | switch_statement )
+
+if_statement ::= 'if' expression statement_block [ 'elif' expression statement ]* [ 'else' statement ]
+while_statement ::= 'while' expression statement ( [ 'nobreak' statement ] )
+for_statement ::= 'for' expression ';' expression ';' expression ';' statement
+do_statement ::= 'do' statement 'while' expression
+
+basic_statement ::= break_statement
+                  | continue_statement
+		  | goto_statement
+
+break_statement ::= 'break'
+continue_statement ::= 'continue'
+goto_statement ::= 'goto' expression
+                 | 'goto' 'case' expression
+
+label_statement ::= identifier ':'
+                  | 'case' expression
+
+type ::= builtin_type
+       | type '@'
+       | type '[' expression ']'
+       | 'func' '(' parameter_list ')' ':' type
+
+expression ::= integer
+             | string_literal
+	     | identifier
+	     | ternary_expression
+	     | '(' expression ')'
+
+ternary_expression ::= assignment_expression '?' assignment_expression '!' ternary_expression
+
+assignment_operator ::= '=' '+=' '-=' '|=' '^=' '*=' '/=' '%=' '&=' '>>=' '<<='
+assignment_expression ::= expression assignment_operator expression
+                        | logical_or_expression
+
+logical_or_operator                      ::= '||'
+logical_or_expression                    ::= logical_and_expression logical_or_operator logical_and_expression
+                                           | logical_and_expression
+logical_and_operator                     ::= '&&'
+logical_and_expression                   ::= relational_expression logical_and_operator relational_expression
+                                           | relational_expression
+relational_operator                      ::= '==' '!=' '<=' '>='
+relational_expresssion                   ::= addition_expression relational_operator addition_expression
+                                           | addition_expression
+addition_operator                        ::= '+' '-' '|' '^'
+addition_expression                      ::= multiplication_expression addition_operator multiplication_expression
+                                           | multiplication_expression
+multiplication_operator                  ::= '*' '/' '%' '&' '<<' '>>'
+multiplication_expression                ::= cast_expression multiplication_operator cast_expression
+                                           | cast_expression
+cast_operator                            ::= 'as'
+cast_expression                          ::= postfix_expression cast_operator type
+                                           | postfix_expression
+postfix_operator                         ::= '.' '()' '[]' '++' '--'
+postfix_expression                       ::= prefix_expression postfix_operator
+                                           | prefix_expression
+prefix_operator                          ::= '@' '++' '--' '+' '-' '~' '!'
+prefix_expression                        ::= prefix_operator expression
+                                           | expression
+identifier ::= [a-zA-Z_][a-zA-Z_0-9]*
+
+integer ::= [1-9][ [0-9] | '_' ]* [ postfix ]
+          | 0x[ [0-9a-fA-F] | '_' ]+ [ postfix ]
+	  | 0[ [0-7] | '_' ]* [ postfix ]
+	  | 0b[ [01] | '_' ]+ [ postfix ]
+	  | single_quote (anything but a non-escaped single_quote or newline) single_quote
+
+postfix ::= 'u'
+          | 'l'
+	  | 'll'
+	  | 'U'
+	  | 'L'
+	  | 'LL'
+	  | 'f'
+	  | 'F'
+	  | 'n'
+	  | 'u8'
+	  | '_8'
+	  | '_16'
+	  | '_32'
+	  | '_64'
+
+string_literal ::= double_quote (anything but a non-escaped double_quote or newline)* double_quote [ postfix ]
+
+double_quote ::= "
+single_quote ::= '
+newline ::= \n
+
