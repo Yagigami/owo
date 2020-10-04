@@ -3,7 +3,7 @@
 
 #define BIT(n) (1ULL << (n))
 #define BITS(n) (BIT((n) % (sizeof (uint64_t) * CHAR_BIT)) - 1)
-#define BITRANGE(a, b) (BITS((a) - 1) - BITS((b)))
+#define BITRANGE(a, b) (BITS((b) - 1) - BITS((a)))
 #define SEXTEND(x, n) ((intmax_t) ((uintmax_t) (x) * BIT((n))) / (1LL << (n)))
 
 #include <stdint.h>
