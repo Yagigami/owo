@@ -15,7 +15,9 @@ typedef ptrdiff_t len_t;
 typedef struct identifier {
 	int8_t len;
 	char str[];
-} identifier, *ident_t;
+} identifier;
+
+typedef const identifier *ident_t;
 
 typedef struct stream {
 	len_t len;

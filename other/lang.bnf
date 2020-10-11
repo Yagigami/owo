@@ -32,14 +32,21 @@ do_statement ::= 'do' statement 'while' expression
 basic_statement ::= break_statement
                   | continue_statement
 		  | goto_statement
+		  | return_statement
 
 break_statement ::= 'break'
 continue_statement ::= 'continue'
 goto_statement ::= 'goto' expression
                  | 'goto' 'case' expression
+return_statement ::= 'return' '=' expression
 
 label_statement ::= identifier ':'
                   | 'case' expression
+
+builtin_type ::= int
+               ( | char )
+	       ( | bool )
+	       ( | float )
 
 type ::= builtin_type
        | type '@'

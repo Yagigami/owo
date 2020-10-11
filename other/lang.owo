@@ -17,6 +17,7 @@ func greet(msg: nstring)
 	comment
 */
 
+/*
 func main(argc: int, argv: nstring@): int
 {
 	let ret: int = 0;
@@ -24,4 +25,5 @@ func main(argc: int, argv: nstring@): int
 	libc.puts(>0 = "positional named arguments");
 	return ret;
 }
+*/
 
