@@ -16,6 +16,7 @@ key_t *pmap_find(ptrmap *m, key_t k, hash_func *fn, cmp_func *cmp)
 	hash_t hash = fn(k);
 	uint8_t *meta = m->mem;
 	key_t *buf = (key_t *) (meta + capm1 + 1);
+	if (!meta) return NULL;
 	for (len_t hi = hash >> 7, lo = PMAP_FULL | (hash & 0x7F), i = hi & capm1;; i = (i + 1) & capm1) {
 		if (meta[i] == PMAP_EMPTY) return NULL;
 		if (meta[i] != lo) continue;
@@ -43,7 +44,7 @@ void pmap_reserve(ptrmap *m, len_t n)
 {
 	len_t cap = 1 << m->log2_cap;
 	if (n < 8) n = 8;
-	if (cap < n) {
+	if (cap <= n) {
 		len_t new_cap = cap * 2;
 		if (new_cap < n) new_cap = 1ll << (sizeof (n) * CHAR_BIT - 1 - __builtin_clzll(n));
 		assert((new_cap & (new_cap - 1)) == 0);

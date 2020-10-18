@@ -11,7 +11,7 @@
 
 
 typedef enum token_kind {
-	TK_NONE = 0,
+	TK_EOF = 0,
 
 	TK_EXCLM = '!',
 	TK_DQUOTE = '"',
@@ -49,9 +49,7 @@ typedef enum token_kind {
 	TK_INT,
 	TK_NAME,
 	TK_STR,
-	TK_KW,
 
-	TK_EOF,
 	TK_END,
 } token_kind;
 
@@ -89,6 +87,8 @@ void lexer_init(lexer *l, stream s);
 void lexer_next(lexer *l);
 void token_print(FILE *f, token t);
 void lexer_fini(lexer *l);
+
+hash_func identifier_hash;
 
 #endif /* TOKEN_H */
 
