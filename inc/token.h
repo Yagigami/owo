@@ -70,13 +70,6 @@ typedef struct token {
 	bool _7         : 1;
 } token;
 
-extern ident_t kw_else;
-extern ident_t kw_func;
-extern ident_t kw_if;
-extern ident_t kw_int;
-extern ident_t kw_let;
-extern ident_t kw_while;
-
 typedef struct lexer {
 	ptrmap ids;
 	char *str;

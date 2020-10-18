@@ -8,22 +8,6 @@
 #include "token.h"
 
 
-#define KEYWORDS() \
-	X(else) \
-	X(for) \
-	X(func) \
-	X(if) \
-	X(int) \
-	X(let) \
-	X(while) \
-
-#define X(w) ident_t kw_ ## w;
-KEYWORDS()
-#undef X
-
-static ptrmap keywords;
-
-hash_func identifier_hash;
 hash_t identifier_hash(key_t k)
 {
 	ident_t id = (ident_t) k;

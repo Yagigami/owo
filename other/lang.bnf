@@ -1,9 +1,11 @@
-translation_unit ::= (module_import*) function_definition*
+translation_unit ::= (module_import*) construct*
+
+construct ::= function_definition
 
 function_definition ::= 'func' identifier '(' parameter_list ')' [ ':' type ] statement_block
 
 parameter_list ::= [ parameter_declaration [ ',' parameter_declaration ]* ]
-parameter_declaration ::= [ identifier ] ':' type
+parameter_declaration ::= identifier ':' type
                         ( | [ identifier ] ':' '...' )
 object_declaration ::= identifier ':' type
 
@@ -50,6 +52,7 @@ builtin_type ::= int
 
 type ::= builtin_type
        | type '@'
+       | type '?'
        | type '[' expression ']'
        | 'func' '(' parameter_list ')' ':' type
 
