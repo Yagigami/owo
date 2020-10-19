@@ -118,9 +118,12 @@ owo_expr owe_ternary(owo_expr cond_expr, owo_expr then_expr, owo_expr else_expr)
 owo_expr owe_binary(token_kind op, owo_expr lhs, owo_expr rhs);
 owo_expr owe_unary(token_kind op, owo_expr expr);
 
-owo_construct owc_funcdef(ident_t name, owo_type ret, small_buf params, small_buf body);
+owo_construct owc_funcdef(allocator al, ident_t name, owo_type ret, small_buf params, small_buf body);
 
 owo_stmt ows_sreturn(owo_expr rval);
+
+void ast_init(owo_ast *ast);
+void ast_fini(owo_ast *ast);
 
 #endif /* OWO_AST_H */
 

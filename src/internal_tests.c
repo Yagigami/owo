@@ -156,7 +156,7 @@ void test_gen_alloc(void)
 	mp_init(&mp, 8, 64, N);
 
 	void *p1 = gen_alloc(&mp, 13);
-	memset(p1, 1, 16);
+	memset(p1, 1, 13);
 	gen_free(&mp, p1, 13);
 
 	mp_fini(&mp);

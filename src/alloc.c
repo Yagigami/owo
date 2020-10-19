@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdalign.h>
 #include <assert.h>
+#include <string.h>
 
 
 alloc_base system_allocator = ALLOC_DEFAULT;
@@ -60,7 +61,7 @@ void arena_fini(mem_arena *ar)
 
 void *arena_alloc(mem_arena *ar, len_t sz)
 {
-	return arena_alloc_align(ar, sz, alignof (void *));
+	return arena_alloc_align(ar, sz, 16);
 }
 
 void *arena_alloc_align(mem_arena *ar, len_t sz, len_t align)
@@ -206,5 +207,18 @@ void gen_free(allocator al, void *mem, len_t sz)
 		default:
 			__builtin_unreachable();
 	}
+}
+
+// none of the current allocators possess any particularly efficient way of reallocating
+__attribute__((weak))
+void *gen_realloc(allocator al, len_t new_sz, void *mem, len_t sz)
+{
+	// if (sz == new_sz) return mem;
+	void *new = gen_alloc(al, new_sz);
+	if (mem) {
+		memcpy(new, mem, sz > new_sz ? new_sz: sz);
+		gen_free(al, mem, sz);
+	}
+	return new;
 }
 

@@ -56,6 +56,7 @@ void mp_free(multipool *mp, void *mem, len_t sz);
 
 extern void *gen_alloc(allocator al, len_t sz);
 extern void gen_free(allocator al, void *mem, len_t sz);
+extern void *gen_realloc(allocator al, len_t new_sz, void *mem, len_t sz);
 
 extern alloc_base system_allocator;
 

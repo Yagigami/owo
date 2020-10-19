@@ -3,11 +3,13 @@
 
 #include "token.h"
 #include "ast.h"
+#include "alloc.h"
 
 
 typedef struct parser {
 	lexer l;
 	owo_ast ast;
+	multipool mp;
 } parser;
 
 void parser_init(parser *p, stream s);

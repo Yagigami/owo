@@ -68,8 +68,9 @@ void *sm_add(allocator al, small_buf *b, void *obj, len_t objsz)
 
 void *sm_resize(allocator al, small_buf *b, len_t objsz)
 {
-	len_t cap = sm_cap(*b) * 2;
-	void *new = xrealloc(sm_mem(*b), cap * objsz);
+	len_t old_cap = sm_cap(*b);
+	len_t cap = old_cap * 2;
+	void *new = gen_realloc(al, cap * objsz, sm_mem(*b), old_cap * objsz);
 	assert(cap < (1 << 15));
 	++*b;
 	sm_set_mem(b, new);
@@ -80,10 +81,9 @@ void *sm_shrink_into(allocator al, small_buf *restrict dst, small_buf src, len_t
 {
 	len_t len = sm_len(src);
 	len_t log2_cap = 63 - __builtin_clzll(len);
-	void *new = xrealloc(sm_mem(src), (1 << log2_cap) * objsz);
-	sm_set_mem(dst, new);
-	*dst |= (len << 48);
-	*dst |= log2_cap;
+	void *new = gen_realloc(al, (1 << log2_cap) * objsz, sm_mem(src), sm_cap(src) * objsz);
+	assert(((intptr_t) new & 0xF) == 0);
+	*dst = (len << 48) | (intptr_t) new | log2_cap;
 	return new;
 }
 

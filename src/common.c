@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 
 
 len_t sb_cap(stretchy_buf buf)
@@ -40,4 +41,13 @@ void sb_shrink_into(fixed_buf *restrict dst, const stretchy_buf *restrict src, l
 {
 	fb_set_len(dst, src->len);
 	fb_set_mem(dst, xrealloc(src->mem, objsz * src->len));
+}
+
+const char *repr_ident(ident_t id, len_t *len)
+{
+	enum { N = 64 };
+	static char buf[N];
+	int res = snprintf(buf, N, "%.*s", (int) fb_len(id), (char *) fb_mem(id));
+	if (len) *len = res;
+	return buf;
 }

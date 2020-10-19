@@ -21,6 +21,8 @@ void init_keywords(ptrmap *m)
 void parser_init(parser *p, stream s)
 {
 	lexer_init(&p->l, s);
+	ast_init(&p->ast);
+	mp_init(&p->mp, 8, 4096, 16 * 1024);
 	init_keywords(&p->l.ids);
 	memset(&p->ast, 0, sizeof p->ast);
 }
@@ -28,15 +30,17 @@ void parser_init(parser *p, stream s)
 void parser_fini(parser *p)
 {
 	lexer_fini(&p->l);
+	ast_fini(&p->ast);
+	mp_fini(&p->mp);
 }
 
 void parse(parser *p)
 {
-	stretchy_buf ctrs = {0};
+	small_buf ctrs = {0};
 	while (1) {
 		lexer_next(&p->l);
 		if (p->l.tok.tid == kw_func)
-			sb_add(&ctrs, parse_func(p), PTRSZ);
+			sm_add(&p->mp, &ctrs, parse_func(p), PTRSZ);
 		else {
 			assert(p->l.tok.kind == TK_EOF);
 			return;
@@ -80,7 +84,7 @@ small_buf parse_stmt_block(parser *p)
 	assert(p->l.tok.kind == TK_LBRACE);
 	while (lexer_next(&p->l), p->l.tok.kind != TK_RBRACE) {
 		owo_stmt stmt = parse_stmt(p);
-		sm_add(&system_allocator, &body, &stmt, PTRSZ);
+		sm_add(&p->mp, &body, &stmt, PTRSZ);
 	}
 	lexer_next(&p->l);
 	return body;
@@ -109,13 +113,13 @@ owo_construct parse_func(parser *p)
 		assert(p->l.tok.kind == TK_COLON);
 		lexer_next(&p->l);
 		param.type = parse_type(p);
-		sm_add(&system_allocator, &params, &param, sizeof param);
+		sm_add(&p->mp, &params, &param, sizeof param);
 	}
 	lexer_next(&p->l);
 	assert(p->l.tok.kind == TK_COLON);
 	lexer_next(&p->l);
 	owo_type ret = parse_type(p);
 	small_buf body = parse_stmt_block(p);
-	return owc_funcdef(*name, ret, params, body);
+	return owc_funcdef(&p->mp, *name, ret, params, body);
 }
 

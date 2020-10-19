@@ -3,15 +3,28 @@
 #include "token.h"
 #include "alloc.h"
 
-
 owo_tbase owo_tint[1] = { OWT_INT };
 owo_tbase owo_tchar[1] = { OWT_CHAR };
 owo_tbase owo_tbool[1] = { OWT_BOOL };
 owo_tbase owo_tfloat[1] = { OWT_FLOAT };
 
+static thread_local mem_arena ast_arena;
+
+void ast_init(owo_ast *ast)
+{
+	(void) ast;
+	arena_init(&ast_arena, 1024 * 1024);
+}
+
+void ast_fini(owo_ast *ast)
+{
+	(void) ast;
+	arena_fini(&ast_arena);
+}
+
 static void *ast_alloc(len_t sz)
 {
-	return xmalloc(sz);
+	return arena_alloc(&ast_arena, sz);
 }
 
 owo_expr owe_int(uint64_t val)
@@ -31,14 +44,14 @@ owo_expr owe_ident(ident_t ident)
 }
 
 
-owo_construct owc_funcdef(ident_t name, owo_type ret, small_buf params, small_buf body)
+owo_construct owc_funcdef(allocator al, ident_t name, owo_type ret, small_buf params, small_buf body)
 {
 	struct owo_cfuncdef *ctr = ast_alloc(sizeof *ctr);
 	ctr->base = OWC_FUNC;
 	ctr->name = name;
 	ctr->ret = ret;
-	sm_shrink_into(&system_allocator, &ctr->params, params, sizeof (struct owo_param));
-	sm_shrink_into(&system_allocator, &ctr->body, body, PTRSZ);
+	sm_shrink_into(al, &ctr->params, params, sizeof (struct owo_param));
+	sm_shrink_into(al, &ctr->body, body, PTRSZ);
 	return &ctr->base;
 }
 

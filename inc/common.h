@@ -12,7 +12,7 @@
 
 #define BIT(n) (1ULL << (n))
 #define BITS(n) (BIT((n) % (sizeof (uint64_t) * CHAR_BIT)) - 1)
-#define BITRANGE(a, b) (BITS((b) - 1) - BITS((a)))
+#define BITRANGE(a, b) (BITS((b)) - BITS((a)))
 #define SEXTEND(x, n) ((intmax_t) ((uintmax_t) (x) * BIT((n))) / (1LL << (n)))
 #define PTRSZ (sizeof (void *))
 #define ISPOW2(x) (((x) & ((x) - 1)) == 0)
@@ -54,6 +54,10 @@ void sb_fini(stretchy_buf *buf);
 // void sb_shrink_into(fixed_buf *restrict dst, const stretchy_buf *restrict src, len_t objsz);
 
 typedef void *allocator;
+
+const char *repr_ident(ident_t id, len_t *len);
+
+#define thread_local _Thread_local
 
 #include "buf.h"
 
