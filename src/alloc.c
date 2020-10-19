@@ -7,6 +7,8 @@
 #include <assert.h>
 
 
+alloc_base system_allocator = ALLOC_DEFAULT;
+
 void *xmalloc(len_t s)
 {
 	void *mem = malloc(s);
@@ -134,7 +136,7 @@ void mp_init(multipool *mp, len_t minsz, len_t maxsz, len_t blksz)
 	for (len_t sz = minsz; sz <= maxsz; sz *= 2) {
 		mem_pool p;
 		pool_init(&p, blksz, sz);
-		sm_add(&mp->buf, &p, sizeof p);
+		sm_add(&system_allocator, &mp->buf, &p, sizeof p);
 	}
 }
 

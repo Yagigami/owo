@@ -2,6 +2,7 @@
 #define ALLOC_H
 
 #include "common.h"
+#include "buf.h"
 
 
 void *xmalloc(len_t s);
@@ -53,10 +54,10 @@ void mp_fini(multipool *mp);
 void *mp_alloc(multipool *mp, len_t sz);
 void mp_free(multipool *mp, void *mem, len_t sz);
 
-typedef void *allocator;
-
 extern void *gen_alloc(allocator al, len_t sz);
 extern void gen_free(allocator al, void *mem, len_t sz);
+
+extern alloc_base system_allocator;
 
 #endif /* ALLOC_H */
 

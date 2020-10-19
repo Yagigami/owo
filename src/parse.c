@@ -4,6 +4,7 @@
 #include "common.h"
 #include "ast.h"
 #include "parse.h"
+#include "alloc.h"
 
 
 #define X(w) ident_t kw_ ## w;
@@ -79,7 +80,7 @@ small_buf parse_stmt_block(parser *p)
 	assert(p->l.tok.kind == TK_LBRACE);
 	while (lexer_next(&p->l), p->l.tok.kind != TK_RBRACE) {
 		owo_stmt stmt = parse_stmt(p);
-		sm_add(&body, &stmt, PTRSZ);
+		sm_add(&system_allocator, &body, &stmt, PTRSZ);
 	}
 	lexer_next(&p->l);
 	return body;
@@ -108,7 +109,7 @@ owo_construct parse_func(parser *p)
 		assert(p->l.tok.kind == TK_COLON);
 		lexer_next(&p->l);
 		param.type = parse_type(p);
-		sm_add(&params, &param, sizeof param);
+		sm_add(&system_allocator, &params, &param, sizeof param);
 	}
 	lexer_next(&p->l);
 	assert(p->l.tok.kind == TK_COLON);

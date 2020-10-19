@@ -37,8 +37,8 @@ owo_construct owc_funcdef(ident_t name, owo_type ret, small_buf params, small_bu
 	ctr->base = OWC_FUNC;
 	ctr->name = name;
 	ctr->ret = ret;
-	sm_shrink_into(&ctr->params, params, sizeof (struct owo_param));
-	sm_shrink_into(&ctr->body, body, PTRSZ);
+	sm_shrink_into(&system_allocator, &ctr->params, params, sizeof (struct owo_param));
+	sm_shrink_into(&system_allocator, &ctr->body, body, PTRSZ);
 	return &ctr->base;
 }
 

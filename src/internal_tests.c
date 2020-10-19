@@ -66,11 +66,11 @@ void test_sm(void)
 {
 	int a[] = { 1, 2, 3, 4, 5, }, n = sizeof a / sizeof *a;
 	small_buf b = 0;
-	sm_add(&b, a + 0, sizeof *a);
-	sm_add(&b, a + 1, sizeof *a);
-	sm_add(&b, a + 2, sizeof *a);
-	sm_add(&b, a + 3, sizeof *a);
-	sm_add(&b, a + 4, sizeof *a);
+	sm_add(&system_allocator, &b, a + 0, sizeof *a);
+	sm_add(&system_allocator, &b, a + 1, sizeof *a);
+	sm_add(&system_allocator, &b, a + 2, sizeof *a);
+	sm_add(&system_allocator, &b, a + 3, sizeof *a);
+	sm_add(&system_allocator, &b, a + 4, sizeof *a);
 	int *p = sm_mem(b);
 	assert(p[0] == 1);
 	assert(p[1] == 2);
