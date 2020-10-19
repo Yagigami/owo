@@ -41,7 +41,7 @@ void test_parser(void)
 	parser p;
 	stream s;
 	s.buf =
-		"func main(a: int): int\n"
+		"func main(a: int@, b: int@@@@@@): int\n"
 		"{\n"
 		"	return = 0;\n"
 		"}\n"
@@ -59,6 +59,7 @@ void run_tests(void)
 	test_buf();
 	test_sm();
 	// test_pmap();
+	test_alloc();
 	test_token();
 	test_parser();
 }

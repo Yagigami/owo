@@ -82,3 +82,91 @@ void test_sm(void)
 	xfree(p);
 }
 
+static void test_arena(void)
+{
+	mem_arena ar;
+	void *p;
+	enum { N = 64 };
+
+	arena_init(&ar, N);
+	p = arena_alloc(&ar, 8);
+	memset(p, 13, 8);
+	p = arena_alloc(&ar, 13);
+	memset(p, 14, 13);
+	p = arena_alloc(&ar, 76);
+	memset(p, 89, 76);
+	p = arena_alloc(&ar, 15);
+	memset(p, 90, 15);
+	arena_fini(&ar);
+}
+
+static void test_pool(void)
+{
+	mem_pool p;
+	enum { N = 64 };
+
+	pool_init(&p, N, 16);
+	void *p1 = pool_alloc(&p);
+	memset(p1, 1, 16);
+	void *p2 = pool_alloc(&p);
+	memset(p2, 2, 16);
+	void *p3 = pool_alloc(&p);
+	memset(p3, 3, 16);
+	pool_free(&p, p2);
+	void *p4 = pool_alloc(&p);
+	assert(p4 == p2);
+	memset(p4, 4, 16);
+	pool_free(&p, p1);
+	pool_free(&p, p3);
+	assert(pool_alloc(&p) == p3);
+	assert(pool_alloc(&p) == p1);
+	pool_fini(&p);
+}
+
+static void test_mpool(void)
+{
+	multipool mp;
+	enum { N = 256 };
+
+	mp_init(&mp, 8, 32, N);
+	void *p1 = mp_alloc(&mp, 16);
+	memset(p1, 1, 16);
+	void *p2 = mp_alloc(&mp, 8);
+	memset(p2, 2, 8);
+	void *p3 = mp_alloc(&mp, 16);
+	memset(p3, 3, 16);
+	mp_free(&mp, p1, 16);
+	mp_free(&mp, p2, 8);
+	void *p4 = mp_alloc(&mp, 32);
+	memset(p4, 4, 32);
+	void *p5 = mp_alloc(&mp, 16);
+	assert(p5 == p1);
+	memset(p5, 5, 16);
+	void *p6 = mp_alloc(&mp, 8);
+	assert(p6 == p2);
+	memset(p6, 6, 8);
+	mp_fini(&mp);
+}
+
+void test_gen_alloc(void)
+{
+	multipool mp;
+	enum { N = 256 };
+
+	mp_init(&mp, 8, 64, N);
+
+	void *p1 = gen_alloc(&mp, 13);
+	memset(p1, 1, 16);
+	gen_free(&mp, p1, 13);
+
+	mp_fini(&mp);
+}
+
+void test_alloc(void)
+{
+	test_arena();
+	test_pool();
+	test_mpool();
+
+	test_gen_alloc();
+}

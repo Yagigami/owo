@@ -81,6 +81,8 @@ space:
 	CASE1('{');
 	CASE1('}');
 	CASE1(',');
+	CASE1('@');
+	CASE1('?');
 #undef CASE1
 	default:
 		fprintf(stderr, "unknown character `%c` (%d)\n", *l->str, *l->str);

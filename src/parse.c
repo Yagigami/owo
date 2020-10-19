@@ -50,6 +50,7 @@ owo_type parse_type(parser *p)
 	lexer_next(&p->l);
 	owo_type t = owo_tint;
 	while (p->l.tok.kind == TK_AT) {
+		lexer_next(&p->l);
 		t = owt_ptr(t);
 	}
 	return t;

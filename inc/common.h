@@ -15,6 +15,9 @@
 #define BITRANGE(a, b) (BITS((b) - 1) - BITS((a)))
 #define SEXTEND(x, n) ((intmax_t) ((uintmax_t) (x) * BIT((n))) / (1LL << (n)))
 #define PTRSZ (sizeof (void *))
+#define ISPOW2(x) (((x) & ((x) - 1)) == 0)
+#define ALIGN_DOWN_P2(x, y) ((x) & ~((y) - 1))
+#define ALIGN_UP_P2(x, y) ALIGN_DOWN_P2((x) + (y) - (1), (y))
 
 #include <stdint.h>
 #include <stddef.h>
