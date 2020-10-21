@@ -22,9 +22,9 @@ void test_token(void)
 		"}\n"
 		;
 	s.len = strlen(s.buf);
-	lexer_init(&l, s);
-	extern void init_keywords(lexer *l);
-	init_keywords(&l);
+	lexer_init(&l, &system_allocator, s);
+	extern void init_keywords(ptrmap *m);
+	init_keywords(&l.ids);
 
 	do {
 		lexer_next(&l);
@@ -63,6 +63,20 @@ void run_tests(void)
 	test_token();
 	test_parser();
 }
+
+#if 0
+void *gen_alloc(allocator al, len_t sz)
+{
+	(void) al;
+	return xmalloc(sz);
+}
+
+void gen_free(allocator al, void *mem, len_t sz)
+{
+	(void) al, (void) sz;
+	xfree(mem);
+}
+#endif
 
 int main(int argc, char **argv)
 {

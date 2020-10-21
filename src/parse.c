@@ -1,5 +1,6 @@
 #include <string.h>
 #include <assert.h>
+#include <stdalign.h>
 
 #include "common.h"
 #include "ast.h"
@@ -18,13 +19,21 @@ void init_keywords(ptrmap *m)
 #undef X
 }
 
+enum { N = 16 * 1024 };
+struct block {
+	mem_temp tmp;
+	alignas (16) char mem[];
+};
+
 void parser_init(parser *p, stream s)
 {
-	lexer_init(&p->l, s);
+	lexer_init(&p->l, &system_allocator, s);
 	ast_init(&p->ast);
-	mp_init(&p->mp, 8, 4096, 16 * 1024);
+	// TODO: obviously not ideal
+	struct block *blk = gen_alloc(&system_allocator, sizeof *blk + N);
+	tmp_init(&blk->tmp, NULL, &blk->mem, N);
+	mp_init(&p->mp, &blk->tmp, 16, 4096);
 	init_keywords(&p->l.ids);
-	memset(&p->ast, 0, sizeof p->ast);
 }
 
 void parser_fini(parser *p)
@@ -32,6 +41,8 @@ void parser_fini(parser *p)
 	lexer_fini(&p->l);
 	ast_fini(&p->ast);
 	mp_fini(&p->mp);
+	struct block *blk = (struct block *) (p->mp._packed >> 12);
+	gen_free(&system_allocator, blk, sizeof *blk + N);
 }
 
 void parse(parser *p)

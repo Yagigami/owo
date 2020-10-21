@@ -44,7 +44,8 @@ len_t sm_cap(small_buf b)
 
 void *sm_mem(small_buf b)
 {
-	return (void *) SEXTEND(b & BITRANGE(4, 48), 16);
+	return (void *) (b & BITRANGE(4, 48));
+	// return (void *) SEXTEND(b & BITRANGE(4, 48), 16);
 }
 
 void sm_set_mem(small_buf *b, void *mem)
@@ -54,7 +55,7 @@ void sm_set_mem(small_buf *b, void *mem)
 	*b = (*b & ~BITRANGE(4, 48)) | (uintptr_t) mem;
 }
 
-void *sm_add(allocator al, small_buf *b, void *obj, len_t objsz)
+void *sm_add(allocator al, small_buf *b, obj_t obj, len_t objsz)
 {
 	len_t len = sm_len(*b);
 	if (!*b || len + 1 > sm_cap(*b))
@@ -81,6 +82,10 @@ void *sm_shrink_into(allocator al, small_buf *restrict dst, small_buf src, len_t
 {
 	len_t len = sm_len(src);
 	len_t log2_cap = 63 - __builtin_clzll(len);
+	if (len * objsz < 16) {
+		*dst = src;
+		return sm_mem(src);
+	}
 	void *new = gen_realloc(al, (1 << log2_cap) * objsz, sm_mem(src), sm_cap(src) * objsz);
 	assert(((intptr_t) new & 0xF) == 0);
 	*dst = (len << 48) | (intptr_t) new | log2_cap;

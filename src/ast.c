@@ -8,23 +8,25 @@ owo_tbase owo_tchar[1] = { OWT_CHAR };
 owo_tbase owo_tbool[1] = { OWT_BOOL };
 owo_tbase owo_tfloat[1] = { OWT_FLOAT };
 
-static thread_local mem_arena ast_arena;
+// TODO: make this local
+static thread_local mem_arena *cur_ar;
 
 void ast_init(owo_ast *ast)
 {
-	(void) ast;
-	arena_init(&ast_arena, 1024 * 1024);
+	ast->ctrs = 0;
+	arena_init(&ast->ar, &system_allocator, 1024 * 1024);
+	cur_ar = &ast->ar;
 }
 
 void ast_fini(owo_ast *ast)
 {
-	(void) ast;
-	arena_fini(&ast_arena);
+	arena_fini(&ast->ar);
+	cur_ar = NULL;
 }
 
 static void *ast_alloc(len_t sz)
 {
-	return arena_alloc(&ast_arena, sz);
+	return arena_alloc(cur_ar, ALIGN_UP_P2(sz, 16));
 }
 
 owo_expr owe_int(uint64_t val)

@@ -28,14 +28,15 @@ int identifier_cmp(key_t k1, key_t k2)
 	return strncmp(fb_mem(i1), fb_mem(i2), l1);
 }
 
-void lexer_init(lexer *l, stream s)
+void lexer_init(lexer *l, allocator al, stream s)
 {
 	l->str = s.buf;
+	l->al = al;
 #ifndef NDEBUG
 	assert(s.buf[s.len] == '\0');
 	memset(&l->tok, 0, sizeof l->tok);
 #endif
-	memset(&l->ids, 0, sizeof l->ids);
+	pmap_init(&l->ids, al);
 }
 
 void lexer_next(lexer *l)

@@ -4,59 +4,83 @@
 #include "common.h"
 #include "buf.h"
 
+#include <setjmp.h>
 
-void *xmalloc(len_t s);
-void *xcalloc(len_t s, len_t n);
-void *xrealloc(void *p, len_t s);
+
+// TODO: make allocators that take an upstream
+// 	allocator *all* have their 1st member
+// 	be { alloc_base; upstream<<16 [; log2_sth ] }
+
+__attribute__((malloc, assume_aligned (16), alloc_size (1), returns_nonnull)) void *
+	xmalloc(len_t s);
+__attribute__((malloc, assume_aligned (16), alloc_size (1, 2), returns_nonnull)) void *
+	xcalloc(len_t s, len_t n);
+REALLOC_LIKE void *xrealloc(void *p, len_t s);
 void xfree(void *mem);
 
 typedef enum alloc_base {
-	ALLOC_DEFAULT = 0,
+	ALLOC_NONE = 0,
+	ALLOC_DEFAULT,
 	ALLOC_ARENA,
 	ALLOC_FIXED_POOL,
 	ALLOC_MULTI_POOL,
+	ALLOC_TMP,
 	ALLOC_NUM,
 } alloc_base;
 
 typedef struct mem_arena {
-	// bits [56..64[: base
-	// bits [ 0..56[: start
+	// byte #1: base
+	// rest : start<<8
 	uintptr_t _packed;
 	char *cur, *end;
+	allocator upstream;
 } mem_arena;
 
-void arena_init(mem_arena *ar, len_t sz);
-void arena_fini(mem_arena *ar);
-void *arena_alloc(mem_arena *ar, len_t sz);
-void *arena_alloc_align(mem_arena *ar, len_t sz, len_t align);
+NONNULL(1, 2) void arena_init(mem_arena *ar, allocator upstream, len_t sz);
+NONNULL(1) void arena_fini(mem_arena *ar);
+NONNULL(1) MALLOC_LIKE void *arena_alloc(mem_arena *ar, len_t sz);
+NONNULL(1) MALLOC_LIKE __attribute__((alloc_align(3))) void *
+	arena_alloc_align(mem_arena *ar, len_t sz, len_t align);
 
 typedef struct mem_pool {
-	// bits [56..64[: base
-	// bits [48..56[: reserved
-	// bits [ 3..48[: ptr
-	// bits [ 0.. 3[: log2_objsz
+	// byte #1 : base
+	// bits [ 8..64[: ptr<<8
 	uintptr_t _packed;
-	mem_arena ar;
+	allocator upstream;
 } mem_pool;
 
-void pool_init(mem_pool *p, len_t sz, len_t objsz);
-void pool_fini(mem_pool *p);
-void *pool_alloc(mem_pool *p);
-void pool_free(mem_pool *p, void *mem);
+NONNULL(1) void pool_init(mem_pool *p, allocator upstream, len_t objsz);
+NONNULL(1) MALLOC_LIKE void *pool_alloc(mem_pool *p, len_t sz);
+NONNULL(1, 2) void pool_free(mem_pool *restrict p, void *mem);
 
 typedef struct multipool {
-	int8_t base;
-	small_buf buf;
+	// byte #1: base
+	// 4 bits: log2_minsz - 4
+	// rest: upstream<<12
+	uintptr_t _packed;
+	fixed_buf buf;
 } multipool;
 
-void mp_init(multipool *mp, len_t minsz, len_t maxsz, len_t blksz);
-void mp_fini(multipool *mp);
-void *mp_alloc(multipool *mp, len_t sz);
-void mp_free(multipool *mp, void *mem, len_t sz);
+NONNULL(1) void mp_init(multipool *mp, allocator upstream, len_t minsz, len_t maxsz);
+NONNULL(1) void mp_fini(multipool *mp);
+NONNULL(1) MALLOC_LIKE void * mp_alloc(multipool *mp, len_t sz);
+NONNULL(1, 2) void mp_free(multipool *restrict mp, void *mem, len_t sz);
 
-extern void *gen_alloc(allocator al, len_t sz);
-extern void gen_free(allocator al, void *mem, len_t sz);
-extern void *gen_realloc(allocator al, len_t new_sz, void *mem, len_t sz);
+typedef struct mem_temp {
+	// first byte : base
+	// rest : end ptr<<8
+	uintptr_t _packed;
+	char *cur;
+	jmp_buf *ctx;
+} mem_temp;
+
+NONNULL(1) void tmp_init(mem_temp *tmp, jmp_buf *ctx, void *restrict mem, len_t sz);
+NONNULL(1) MALLOC_LIKE void * tmp_alloc(mem_temp *tmp, len_t sz);
+
+extern NONNULL(1) MALLOC_LIKE void *gen_alloc(allocator al, len_t sz);
+extern NONNULL(1, 2) void gen_free(allocator al, void *mem, len_t sz);
+// however, for now, `mem` may be NULL
+extern NONNULL(1) REALLOC_LIKE void *gen_realloc(allocator al, len_t new_sz, void *mem, len_t sz);
 
 extern alloc_base system_allocator;
 

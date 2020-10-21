@@ -1,6 +1,6 @@
-CC := gcc
+CC := gcc-10.2.0
 AS := as
-LD := gcc
+LD := gcc-10.2.0
 
 MODE ?= debug
 
@@ -19,11 +19,11 @@ WARNINGS := -Wall -Wextra -Wformat=2 -Wformat-overflow=2 -Winit-self     \
 LIB      :=
 LIBD     :=
 
-CFLAGS = -std=c11 -ggdb3 -fPIC $(addprefix -I,$(INCLUDE)) $(WARNINGS)
+CFLAGS = -std=c11 -ggdb3 -fPIC $(addprefix -I,$(INCLUDE)) $(WARNINGS) -fanalyzer
 LDFLAGS = $(addprefix -l,$(LIB)) $(addprefix -L,$(LIBD))
 
 ifeq ($(MODE),release)
-	CFLAGS += -O3 -DNDEBUG
+	CFLAGS += -O3 -DNDEBUG -flto
 else
 	CFLAGS += -fsanitize=address,undefined
 endif

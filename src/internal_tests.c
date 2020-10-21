@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
+#include <setjmp.h>
 
 #include "alloc.h"
 #include "common.h"
@@ -88,78 +90,107 @@ static void test_arena(void)
 	void *p;
 	enum { N = 64 };
 
-	arena_init(&ar, N);
-	p = arena_alloc(&ar, 8);
+	arena_init(&ar, &system_allocator, N);
+	p = arena_alloc(&ar, ALIGN_UP_P2(8, 16));
 	memset(p, 13, 8);
-	p = arena_alloc(&ar, 13);
+	p = arena_alloc(&ar, ALIGN_UP_P2(13, 16));
 	memset(p, 14, 13);
-	p = arena_alloc(&ar, 76);
+	p = arena_alloc(&ar, ALIGN_UP_P2(76, 16));
 	memset(p, 89, 76);
-	p = arena_alloc(&ar, 15);
+	p = arena_alloc(&ar, ALIGN_UP_P2(15, 16));
 	memset(p, 90, 15);
 	arena_fini(&ar);
 }
 
 static void test_pool(void)
 {
+	mem_temp tmp;
 	mem_pool p;
 	enum { N = 64 };
 
-	pool_init(&p, N, 16);
-	void *p1 = pool_alloc(&p);
+	char a[N];
+	tmp_init(&tmp, NULL, a, N);
+	pool_init(&p, &tmp, 16);
+	void *p1 = pool_alloc(&p, 16);
 	memset(p1, 1, 16);
-	void *p2 = pool_alloc(&p);
+	void *p2 = pool_alloc(&p, 16);
 	memset(p2, 2, 16);
-	void *p3 = pool_alloc(&p);
+	void *p3 = pool_alloc(&p, 16);
 	memset(p3, 3, 16);
 	pool_free(&p, p2);
-	void *p4 = pool_alloc(&p);
+	void *p4 = pool_alloc(&p, 16);
 	assert(p4 == p2);
 	memset(p4, 4, 16);
 	pool_free(&p, p1);
 	pool_free(&p, p3);
-	assert(pool_alloc(&p) == p3);
-	assert(pool_alloc(&p) == p1);
-	pool_fini(&p);
+	assert(pool_alloc(&p, 16) == p3);
+	assert(pool_alloc(&p, 16) == p1);
 }
 
 static void test_mpool(void)
 {
+	mem_temp tmp;
 	multipool mp;
 	enum { N = 256 };
+	char a[N];
 
-	mp_init(&mp, 8, 32, N);
+	tmp_init(&tmp, NULL, a, N);
+	mp_init(&mp, &tmp, 16, 32);
 	void *p1 = mp_alloc(&mp, 16);
 	memset(p1, 1, 16);
-	void *p2 = mp_alloc(&mp, 8);
-	memset(p2, 2, 8);
+	void *p2 = mp_alloc(&mp, 16);
+	memset(p2, 2, 16);
 	void *p3 = mp_alloc(&mp, 16);
 	memset(p3, 3, 16);
 	mp_free(&mp, p1, 16);
-	mp_free(&mp, p2, 8);
+	mp_free(&mp, p2, 16);
 	void *p4 = mp_alloc(&mp, 32);
 	memset(p4, 4, 32);
 	void *p5 = mp_alloc(&mp, 16);
-	assert(p5 == p1);
+	assert(p5 == p2);
 	memset(p5, 5, 16);
-	void *p6 = mp_alloc(&mp, 8);
-	assert(p6 == p2);
-	memset(p6, 6, 8);
+	void *p6 = mp_alloc(&mp, 16);
+	assert(p6 == p1);
+	memset(p6, 6, 16);
 	mp_fini(&mp);
 }
 
 void test_gen_alloc(void)
 {
+	mem_temp tmp;
 	multipool mp;
 	enum { N = 256 };
+	char a[N];
 
-	mp_init(&mp, 8, 64, N);
+	tmp_init(&tmp, NULL, a, N);
+	mp_init(&mp, &tmp, 16, 64);
 
-	void *p1 = gen_alloc(&mp, 13);
+	void *p1 = gen_alloc(&mp, ALIGN_UP_P2(13, 16));
 	memset(p1, 1, 13);
-	gen_free(&mp, p1, 13);
+	gen_free(&mp, p1, ALIGN_UP_P2(13, 16));
 
 	mp_fini(&mp);
+}
+
+void test_tmp(void)
+{
+	mem_temp tmp;
+	enum { N = 1024 * 4 };
+	char a[N];
+	jmp_buf ctx;
+	if (setjmp(ctx) == 0) {
+		tmp_init(&tmp, &ctx, a, N);
+
+		void *p;
+		p = tmp_alloc(&tmp, 16);
+		memset(p, 1, 16);
+		p = tmp_alloc(&tmp, 16);
+		memset(p, 2, 16);
+		p = tmp_alloc(&tmp, 16);
+		memset(p, 3, 16);
+	} else {
+		fprintf(stderr, "%d bytes is not enough memory!\n", N);
+	}
 }
 
 void test_alloc(void)
@@ -167,6 +198,7 @@ void test_alloc(void)
 	test_arena();
 	test_pool();
 	test_mpool();
+	test_tmp();
 
 	test_gen_alloc();
 }

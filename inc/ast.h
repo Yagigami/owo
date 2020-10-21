@@ -3,11 +3,13 @@
 
 #include "common.h"
 #include "token.h"
+#include "alloc.h"
 
 
 typedef struct owo_ast owo_ast;
 
 struct owo_ast {
+	mem_arena ar;
 	small_buf ctrs; // PTR
 };
 

@@ -10,6 +10,14 @@
 #define PMAP_DELETED 0x7F
 #define PMAP_FULL    0x80 //  0b1xxxxxxx
 
+void pmap_init(ptrmap *m, allocator al)
+{
+	m->len = 0;
+	m->log2_cap = 0;
+	m->mem = NULL;
+	m->upstream = al;
+}
+
 key_t *pmap_find(ptrmap *m, key_t k, hash_func *fn, cmp_func *cmp)
 {
 	len_t capm1 = (1 << m->log2_cap) - 1;
@@ -48,7 +56,7 @@ void pmap_reserve(ptrmap *m, len_t n)
 		len_t new_cap = cap * 2;
 		if (new_cap < n) new_cap = 1ll << (sizeof (n) * CHAR_BIT - 1 - __builtin_clzll(n));
 		assert((new_cap & (new_cap - 1)) == 0);
-		void *mem = xrealloc(m->mem, new_cap * (1 + sizeof (key_t)));
+		void *mem = gen_realloc(m->upstream, new_cap * (1 + sizeof (key_t)), m->mem, cap * sizeof (key_t));
 		memset(mem, PMAP_EMPTY, new_cap);
 		assert(((intptr_t) mem & 0xF) == 0);
 		m->mem = mem;
@@ -58,7 +66,7 @@ void pmap_reserve(ptrmap *m, len_t n)
 
 void pmap_fini(ptrmap *m)
 {
-	xfree(m->mem);
+	gen_free(m->upstream, m->mem, (1 << m->log2_cap) * PTRSZ);
 	memset(m, 0, sizeof *m);
 }
 
