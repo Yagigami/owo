@@ -1,6 +1,8 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
+#include "begincpp.h"
+
 #include "common.h"
 
 
@@ -31,6 +33,8 @@ void *sm_add(allocator al, small_buf *b, obj_t obj, len_t objsz);
 void *sm_resize(allocator al, small_buf *b, len_t objsz);
 void *sm_shrink_into(allocator al, small_buf *restrict dst, small_buf src, len_t objsz);
 
+
+#include "endcpp.h"
 
 #endif /* BUFFER_H */
 

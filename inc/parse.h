@@ -1,6 +1,8 @@
 #ifndef OWO_PARSER_H
 #define OWO_PARSER_H
 
+#include "begincpp.h"
+
 #include "token.h"
 #include "ast.h"
 #include "alloc.h"
@@ -33,6 +35,7 @@ owo_type parse_type(parser *p);
 KEYWORDS()
 #undef X
 
+#include "endcpp.h"
 
 #endif /* OWO_PARSER_H */
 

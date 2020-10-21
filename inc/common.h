@@ -1,14 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#ifdef __cplusplus
-  #ifdef __GNUC__
-    #define restrict __restrict
-  #else
-    #define restrict
-  #endif /* GNUC */
-  extern "C" {
-#endif /* __cplusplus */
+#include "begincpp.h"
 
 #define BIT(n) (1ULL << (n))
 #define BITS(n) (BIT((n) % (sizeof (uint64_t) * CHAR_BIT)) - 1)
@@ -34,26 +27,22 @@
 #define REALLOC_LIKE __attribute__((returns_nonnull, assume_aligned(16), alloc_size(2)))
 #define MALLOC_LIKE __attribute__((malloc)) REALLOC_LIKE
 
-typedef ptrdiff_t len_t;
+#define thread_local _Thread_local
 
+typedef ptrdiff_t len_t;
 typedef uintptr_t ident_t;
+typedef void *restrict allocator;
 
 typedef struct stream {
 	len_t len;
 	char *buf;
 } stream;
 
-typedef void *restrict allocator;
+#include "buf.h"
 
 const char *repr_ident(ident_t id, len_t *len);
 
-#define thread_local _Thread_local
-
-#include "buf.h"
-
-#ifdef  __cplusplus
-}
-#endif
+#include "endcpp.h"
 
 #endif /* COMMON_H */
 

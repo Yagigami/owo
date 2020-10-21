@@ -1,6 +1,8 @@
 #ifndef ALLOC_H
 #define ALLOC_H
 
+#include "begincpp.h"
+
 #include "common.h"
 #include "buf.h"
 
@@ -83,6 +85,8 @@ extern NONNULL(1, 2) void gen_free(allocator al, void *mem, len_t sz);
 extern NONNULL(1) REALLOC_LIKE void *gen_realloc(allocator al, len_t new_sz, void *mem, len_t sz);
 
 extern alloc_base system_allocator;
+
+#include "endcpp.h"
 
 #endif /* ALLOC_H */
 

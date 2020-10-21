@@ -1,6 +1,8 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
+#include "begincpp.h"
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -83,6 +85,8 @@ void token_print(FILE *f, token t);
 void lexer_fini(lexer *l);
 
 hash_func identifier_hash;
+
+#include "endcpp.h"
 
 #endif /* TOKEN_H */
 

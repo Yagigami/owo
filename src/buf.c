@@ -50,8 +50,7 @@ void *sm_mem(small_buf b)
 
 void sm_set_mem(small_buf *b, void *mem)
 {
-	assert(((uintptr_t) mem & 0xF) == 0);
-	assert(((uintptr_t) mem >> 48) == 0);
+	assert(IS_NICE_PTR16(mem));
 	*b = (*b & ~BITRANGE(4, 48)) | (uintptr_t) mem;
 }
 

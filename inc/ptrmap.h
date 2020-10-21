@@ -1,6 +1,8 @@
 #ifndef PTRMAP_H
 #define PTRMAP_H
 
+#include "begincpp.h"
+
 #include <stdint.h>
 #include <assert.h>
 
@@ -28,6 +30,8 @@ key_t *pmap_push(ptrmap *m, key_t k, hash_func *fn);
 void pmap_reserve(ptrmap *m, len_t n);
 void pmap_fini(ptrmap *m);
 
+
+#include "endcpp.h"
 
 #endif /* PTRMAP_H */
 

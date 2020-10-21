@@ -1,6 +1,8 @@
 #ifndef OWO_AST_H
 #define OWO_AST_H
 
+#include "begincpp.h"
+
 #include "common.h"
 #include "token.h"
 #include "alloc.h"
@@ -126,6 +128,8 @@ owo_stmt ows_sreturn(owo_expr rval);
 
 void ast_init(owo_ast *ast);
 void ast_fini(owo_ast *ast);
+
+#include "endcpp.h"
 
 #endif /* OWO_AST_H */
 
