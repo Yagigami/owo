@@ -39,7 +39,7 @@ len_t sm_len(small_buf b)
 
 len_t sm_cap(small_buf b)
 {
-	return 1 << (b & 0xF);
+	return 1LL << (b & 0xF);
 }
 
 void *sm_mem(small_buf b)
@@ -61,6 +61,7 @@ void *sm_add(allocator al, small_buf *b, obj_t obj, len_t objsz)
 		sm_resize(al, b, objsz);
 	void *dst = (char *) sm_mem(*b) + len * objsz;
 	memcpy(dst, obj, objsz);
+	assert(len < (1 << 15));
 	len++;
 	*b = (len << 48) | (*b & BITS(48));
 	return dst;
@@ -80,6 +81,10 @@ void *sm_resize(allocator al, small_buf *b, len_t objsz)
 void *sm_shrink_into(allocator al, small_buf *restrict dst, small_buf src, len_t objsz)
 {
 	len_t len = sm_len(src);
+	if (len == 0) {
+		*dst = 0;
+		return NULL;
+	}
 	len_t log2_cap = 63 - __builtin_clzll(len);
 	if (len * objsz < 16) {
 		*dst = src;
@@ -89,6 +94,30 @@ void *sm_shrink_into(allocator al, small_buf *restrict dst, small_buf src, len_t
 	assert(((intptr_t) new & 0xF) == 0);
 	*dst = (len << 48) | (intptr_t) new | log2_cap;
 	return new;
+}
+
+void *sm_fit(allocator al, small_buf *b, len_t n, len_t objsz)
+{
+	assert(n > 0);
+	small_buf old = *b;
+#ifndef NDEBUG
+	len_t shamt = n != 1 ? 64 - __builtin_clzll(n - 1): 0;
+#else
+	static_assert(64 - __builtin_clzll(0) == 0, ""); // UNDEFINED BEHAVIOR
+	len_t shamt = 64 - __builtin_clzll(n - 1);
+#endif
+	len_t old_cap = sm_cap(old);
+	len_t len     = sm_len(old);
+	len_t cap     = 1LL << shamt;
+	assert(cap < (1LL << 15));
+	char *new = gen_realloc(al, cap * objsz, sm_mem(old), old_cap * objsz);
+	*b = (len << 48) | (uintptr_t) new | shamt;
+	return new + len * objsz;
+}
+
+void *sm_reserve(allocator al, small_buf *b, len_t n, len_t objsz)
+{
+	return sm_fit(al, b, sm_len(*b) + n, objsz);
 }
 
 

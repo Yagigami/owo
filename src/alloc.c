@@ -235,6 +235,9 @@ __attribute__((weak))
 void gen_free(allocator al, void *mem, len_t sz)
 {
 	alloc_base base = *(int8_t *) al;
+#ifndef NDEBUG
+	memset(mem, 0x69, sz);
+#endif
 	switch (base) {
 		case ALLOC_DEFAULT:
 			xfree(mem);

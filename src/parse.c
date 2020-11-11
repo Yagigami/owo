@@ -47,13 +47,16 @@ void parser_fini(parser *p)
 
 void parse(parser *p)
 {
-	small_buf ctrs = {0};
+	small_buf ctrs = 0;
 	while (1) {
 		lexer_next(&p->l);
-		if (p->l.tok.tid == kw_func)
-			sm_add(&p->mp, &ctrs, parse_func(p), PTRSZ);
+		if (p->l.tok.tid == kw_func) {
+			owo_construct ctr = parse_func(p);
+			sm_add(&p->mp, &ctrs, &ctr, PTRSZ);
+		}
 		else {
 			assert(p->l.tok.kind == TK_EOF);
+			p->ast.ctrs = ctrs;
 			return;
 		}
 	}

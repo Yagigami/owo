@@ -30,8 +30,9 @@
 #define thread_local _Thread_local
 
 typedef ptrdiff_t len_t;
-typedef uintptr_t ident_t;
+typedef uintptr_t ident_t; // fixed_buf
 typedef void *restrict allocator;
+typedef uint8_t byte_t;
 
 typedef struct stream {
 	len_t len;

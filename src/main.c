@@ -9,6 +9,9 @@
 #include "ptrmap.h"
 #include "parse.h"
 #include "internal_tests.h"
+#include "bytecode.h"
+#include "x86-64.h"
+
 
 void test_token(void)
 {
@@ -53,6 +56,37 @@ void test_parser(void)
 	printf("\n\n");
 }
 
+void test_bytecode(void)
+{
+	parser p;
+	stream s;
+	bc_unit u;
+	gen_x64 g;
+	printf("==== BYTECODE ====\n");
+	s.buf = 
+		"func main(): int"
+		"{\n"
+		"	return = 0;\n"
+		"}\n"
+		;
+	s.len = strlen(s.buf);
+	parser_init(&p, s);
+	parse(&p);
+
+	bcu_init(&u, &system_allocator);
+	bct_ast(&u, &p.ast);
+	bcu_dump(stdout, &u);
+	gx64_init(&g, &system_allocator);
+	gx64t_bc(&g, &u);
+	gx64_dump(stdout, &g);
+	
+	gx64_fini(&g);
+	bcu_fini(&u);
+	parser_fini(&p);
+
+	printf("\n\n");
+}
+
 void run_tests(void)
 {
 	test_macros();
@@ -62,6 +96,7 @@ void run_tests(void)
 	test_alloc();
 	test_token();
 	test_parser();
+	test_bytecode();
 }
 
 #if 0
