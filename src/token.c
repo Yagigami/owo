@@ -39,25 +39,39 @@ void lexer_init(lexer *l, allocator al, stream s)
 	pmap_init(&l->ids, al);
 }
 
+static char *lex_name(const char *str)
+{
+	const char *cur = str;
+	while (isalpha(*cur) || *cur == '_') cur++;
+	return (char *) cur;
+}
+
+static char *lex_space(const char *str)
+{
+	while (isspace(*str)) str++;
+	return (char *) str;
+}
+
 void lexer_next(lexer *l)
 {
-space:
-	;
+space:  ;
 	char *start = l->str;
-	ident_t name, *id;
+	ident_t name;
 	switch (*l->str) {
 	case '\0':
 		l->tok.kind = TK_EOF;
 		return;
 	case ' ': case '\t': case '\n': case '\f': case '\v':
-		while (isspace(*l->str)) l->str++;
+		l->str = lex_space(l->str);
 		goto space;
 	case 'a' ... 'z': case 'A' ... 'Z': case '_':
-		while (isalpha(*l->str) || *l->str == '_') l->str++;
+		l->str = lex_name(l->str);
+		if (l->str - start > 32) {
+			fprintf(stderr, "name \"%.*s\" is too long.\n", (int) (l->str - start), start);
+			__builtin_unreachable();
+		}
 		name = fb_set(l->str - start, start);
-		id = (ident_t *) pmap_find(&l->ids, (void *) name, identifier_hash, identifier_cmp);
-		if (!id) id = (ident_t *) pmap_push(&l->ids, (void *) name, identifier_hash);
-		l->tok.tid = *id;
+		l->tok.tid = *(ident_t *) pmap_intern(&l->ids, (void *) name, identifier_hash, identifier_cmp);
 		l->tok.kind = TK_NAME;
 		return;
 	case '0' ... '9':
@@ -71,7 +85,7 @@ space:
 		if (*++l->str == '*') {
 			while (l->str[0] != '*' && l->str[1] != '/') l->str++;
 			goto space;
-		}
+		} // ok there is /* but also: /= // /
 		break;
 #define CASE1(x) case x: l->tok.kind = *l->str; break
 	CASE1('(');

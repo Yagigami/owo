@@ -45,6 +45,7 @@ void xfree(void *mem)
 
 static void arena_meta(void *restrict start, void *restrict next, uint8_t growths)
 {
+	// ew
 	*(void **) start = next;
 	((uint8_t *) start)[9] = growths;
 }
@@ -137,8 +138,6 @@ void *pool_alloc(mem_pool *p, len_t sz)
 		return mem;
 	}
 	return gen_alloc(p->upstream, sz);
-	// TODO: make this gen_alloc
-	// return arena_alloc(&p->ar, sz);
 }
 
 void pool_free(mem_pool *restrict p, void *mem)

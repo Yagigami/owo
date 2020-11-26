@@ -6,54 +6,6 @@
 #include <string.h>
 
 
-len_t fb_len(fixed_buf b)
-{
-	static_assert(sizeof (uintptr_t) == 8, "");
-	return b >> 48;
-}
-
-void *fb_mem(fixed_buf b)
-{
-	return (void *) SEXTEND(b, 16);
-}
-
-void fb_set_len(fixed_buf *b, len_t l)
-{
-	*b = (*b & BITS(48)) | (l << 48);
-}
-
-void fb_set_mem(fixed_buf *b, void *m)
-{
-	*b = (*b & BITRANGE(48, 64)) | ((uintptr_t) m & BITS(48));
-}
-
-fixed_buf fb_set(len_t len, void *mem)
-{
-	return (len << 48) | ((uintptr_t) mem & BITS(48));
-}
-
-len_t sm_len(small_buf b)
-{
-	return b >> 48;
-}
-
-len_t sm_cap(small_buf b)
-{
-	return 1LL << (b & 0xF);
-}
-
-void *sm_mem(small_buf b)
-{
-	return (void *) (b & BITRANGE(4, 48));
-	// return (void *) SEXTEND(b & BITRANGE(4, 48), 16);
-}
-
-void sm_set_mem(small_buf *b, void *mem)
-{
-	assert(IS_NICE_PTR16(mem));
-	*b = (*b & ~BITRANGE(4, 48)) | (uintptr_t) mem;
-}
-
 void *sm_add(allocator al, small_buf *b, obj_t obj, len_t objsz)
 {
 	len_t len = sm_len(*b);
@@ -62,8 +14,7 @@ void *sm_add(allocator al, small_buf *b, obj_t obj, len_t objsz)
 	void *dst = (char *) sm_mem(*b) + len * objsz;
 	memcpy(dst, obj, objsz);
 	assert(len < (1 << 15));
-	len++;
-	*b = (len << 48) | (*b & BITS(48));
+	sm_add_len(b, 1);
 	return dst;
 }
 
@@ -73,7 +24,7 @@ void *sm_resize(allocator al, small_buf *b, len_t objsz)
 	len_t cap = old_cap * 2;
 	void *new = gen_realloc(al, cap * objsz, sm_mem(*b), old_cap * objsz);
 	assert(cap < (1 << 15));
-	++*b;
+	sm_add_cap(b, 1);
 	sm_set_mem(b, new);
 	return new;
 }
@@ -91,8 +42,8 @@ void *sm_shrink_into(allocator al, small_buf *restrict dst, small_buf src, len_t
 		return sm_mem(src);
 	}
 	void *new = gen_realloc(al, (1 << log2_cap) * objsz, sm_mem(src), sm_cap(src) * objsz);
-	assert(((intptr_t) new & 0xF) == 0);
-	*dst = (len << 48) | (intptr_t) new | log2_cap;
+	assert(IS_NICE_PTR16(new));
+	sm_set(len, log2_cap, new);
 	return new;
 }
 
@@ -111,7 +62,7 @@ void *sm_fit(allocator al, small_buf *b, len_t n, len_t objsz)
 	len_t cap     = 1LL << shamt;
 	assert(cap < (1LL << 15));
 	char *new = gen_realloc(al, cap * objsz, sm_mem(old), old_cap * objsz);
-	*b = (len << 48) | (uintptr_t) new | shamt;
+	*b = sm_set(len, shamt, new);
 	return new + len * objsz;
 }
 
@@ -120,5 +71,35 @@ void *sm_reserve(allocator al, small_buf *b, len_t n, len_t objsz)
 	return sm_fit(al, b, sm_len(*b) + n, objsz);
 }
 
+void *vec_add(allocator al, vector *v, obj_t obj, len_t objsz)
+{
+	len_t n = v->len + 1;
+	if (n > v->cap)
+		vec_fit(al, v, v->cap ? 2 * v->cap: 1, objsz);
+	void *dst = (char *) v->mem + v->len;
+	memcpy(dst, obj, objsz);
+	v->len = n;
+	return dst;
+}
 
+void *vec_fit(allocator al, vector *v, len_t n, len_t objsz)
+{
+	// assert(n > v->cap);
+	if (n <= v->cap) return v->mem;
+	char *new = gen_realloc(al, n * objsz, v->mem, v->cap * objsz);
+	v->cap = n;
+	return v->mem = new;
+}
+
+void *vec_reserve(allocator al, vector *v, len_t n, len_t objsz)
+{
+	return vec_fit(al, v, v->len + n, objsz);
+}
+
+void vec_extend(allocator al, vector *v, const void *restrict src, len_t n, len_t objsz)
+{
+	char *restrict dst = vec_reserve(al, v, n, objsz);
+	memcpy(dst + v->len * objsz, src, n * objsz);
+	v->len += n;
+}
 

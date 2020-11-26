@@ -40,13 +40,6 @@ void bcu_fini(bc_unit *u)
 
 void bct_ast(bc_unit *u, owo_ast *ast)
 {
-	/*
-	owo_construct *start = sm_mem(ast->ctrs);
-	owo_construct *end   = start + sm_len(ast->ctrs);
-	for (owo_construct *it = start; it != end; it++) {
-		assert(**it == OWC_FUNC);
-	}
-	*/
 	sm_iter(owo_construct, ast->ctrs, it, switch (*it) {
 	case OWC_FUNC: {
 		struct owo_cfuncdef *ctr = (struct owo_cfuncdef *) it;
@@ -84,3 +77,4 @@ bc_instr bct_sreturn(bc_unit *u, struct owo_sreturn *stmt)
 	bc_instr ins = { .opcode = BC_RETI, .operand = ((struct owo_eint *) stmt->rval) ->val, };
 	return ins;
 }
+

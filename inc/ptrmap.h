@@ -27,6 +27,7 @@ typedef struct ptrmap {
 void pmap_init(ptrmap *m, allocator al);
 key_t *pmap_find(ptrmap *m, key_t k, hash_func *fn, cmp_func *cmp);
 key_t *pmap_push(ptrmap *m, key_t k, hash_func *fn);
+key_t *pmap_intern(ptrmap *m, key_t k, hash_func *fn, cmp_func *cmp);
 void pmap_reserve(ptrmap *m, len_t n);
 void pmap_fini(ptrmap *m);
 

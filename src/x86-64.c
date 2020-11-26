@@ -8,12 +8,13 @@ static byte_t *emit_n(gen_x64 *gen, const byte_t *mem, len_t n)
 {
 	byte_t *start = sm_reserve(gen->al, &gen->insns, n, sizeof *start);
 	memcpy(start, mem, n);
-	gen->insns += n << 48;
+	sm_add_len(&gen->insns, n);
 	return start;
 }
 
 static len_t gen_mov_imm(byte_t *dst, int reg, uint64_t val)
 {
+	// ew
 	if (val < BIT(32)) {
 		int upper = reg >> 3;
 		if (upper) *dst++ = 0x41;
@@ -44,7 +45,7 @@ void gx64_fini(gen_x64 *gen)
 void gx64t_bc(gen_x64 *gen, bc_unit *u)
 {
 	struct cg_sym *syms = sm_fit(gen->al, &gen->syms, sm_len(u->funcs), sizeof (bc_funcdef));
-	gen->syms += sm_len(u->funcs) << 48;
+	sm_add_len(&gen->syms, sm_len(u->funcs));
 	sm_iter(bc_funcdef, u->funcs, fn, {
 		len_t idx = sm_len(gen->insns);
 		sm_iter(bc_instr, fn.insns, ins, switch (ins.opcode) {

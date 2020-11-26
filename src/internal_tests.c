@@ -56,10 +56,7 @@ void test_pmap(void)
 void test_buf(void)
 {
 	char *s = "abcdef";
-	fixed_buf b;
-	fb_set_mem(&b, s);
-	assert(fb_mem(b) == s);
-	fb_set_len(&b, 6);
+	fixed_buf b = fb_set(6, s);
 	assert(fb_mem(b) == s);
 	assert(fb_len(b) == 6);
 }
