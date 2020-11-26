@@ -38,11 +38,16 @@ typedef struct mem_arena {
 	allocator upstream;
 } mem_arena;
 
+typedef char *mem_arena_mark;
+
 NONNULL(1, 2) void arena_init(mem_arena *ar, allocator upstream, len_t sz);
 NONNULL(1) void arena_fini(mem_arena *ar);
 NONNULL(1) MALLOC_LIKE void *arena_alloc(mem_arena *ar, len_t sz);
 NONNULL(1) MALLOC_LIKE __attribute__((alloc_align(3))) void *
 	arena_alloc_align(mem_arena *ar, len_t sz, len_t align);
+
+NONNULL(1) mem_arena_mark arena_mark(mem_arena *ar);
+NONNULL(1, 2) void arena_rewind(mem_arena *ar, mem_arena_mark mark);
 
 typedef struct mem_pool {
 	// byte #1 : base
