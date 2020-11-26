@@ -17,6 +17,7 @@ typedef void *key_t;
 typedef hash_t hash_func(key_t k);
 typedef int cmp_func(key_t k1, key_t k2);
 
+// TODO: see if a bloom filter for hashes helps in any way
 typedef struct ptrmap {
 	void *mem;
 	len_t len: 56;

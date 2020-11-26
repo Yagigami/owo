@@ -11,7 +11,7 @@
 #include "internal_tests.h"
 #include "bytecode.h"
 #include "x86-64.h"
-
+#include "elf-rename-me.h"
 
 void test_token(void)
 {
@@ -79,6 +79,11 @@ void test_bytecode(void)
 	gx64_init(&g, &system_allocator);
 	gx64t_bc(&g, &u);
 	gx64_dump(stdout, &g);
+
+	stream f = elf_serialize_x64(&system_allocator, &g, "foo");
+	FILE *fp = fopen("foo", "wb");
+	fwrite(f.buf, f.len, 1, fp);
+	fclose(fp);
 	
 	gx64_fini(&g);
 	bcu_fini(&u);

@@ -98,12 +98,23 @@ void *arena_alloc_align(mem_arena *ar, len_t sz, len_t align)
 		start = blk;
 		ar->end = start + blk_sz;
 		ar->cur = start + ARENA_META;
+		// assumes little-endian
 		ar->_packed = ALLOC_ARENA | ((uintptr_t) start << 8);
-		// ar->_packed = ((intptr_t) ALLOC_ARENA << 56) | (intptr_t) start;
 		new = (char *) ALIGN_UP_P2((intptr_t) ar->cur, align);
 	}
 	ar->cur = new + sz;
 	return new;
+}
+
+mem_arena_mark arena_mark(mem_arena *ar)
+{
+	return ar->cur;
+}
+
+void arena_rewind(mem_arena *ar, mem_arena_mark mark)
+{
+	assert(mark >= (char *) (ar->_packed >> 8) && mark < ar->end);
+	ar->cur = mark;
 }
 
 static void *pool_ptr(const mem_pool *p)

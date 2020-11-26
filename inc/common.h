@@ -30,6 +30,14 @@
 #define thread_local _Thread_local
 
 typedef ptrdiff_t len_t;
+// identifiers are never more than 32 (16?) characters, so they are very small,
+// however we can't embed them in a hashmap and we need 2 layers of indirection to get pointer statibility
+// maybe make identifiers 16 chars:
+//   store them inline, 16 byte aligned, no length info, followed by NULs
+//   example:
+//     "message"
+//     6d 65 73 73 | 61 67 65 00 | 00 00 00 00 | 00 00 00 00
+//   to get the length: (__m128i)s: __builtin_popcount(_mm_movemask_epi8(_mm_cmpgt_epi8(s,_mm_setzero_s128())))
 typedef uintptr_t ident_t; // fixed_buf
 typedef void *restrict allocator;
 typedef uint8_t byte_t;
