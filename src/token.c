@@ -18,7 +18,6 @@ hash_t identifier_hash(key_t k)
 	return h;
 }
 
-cmp_func identifier_cmp;
 int identifier_cmp(key_t k1, key_t k2)
 {
 	ident_t i1 = (ident_t) k1, i2 = (ident_t) k2;

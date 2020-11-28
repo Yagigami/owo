@@ -32,10 +32,9 @@ typedef enum alloc_base {
 
 typedef struct mem_arena {
 	// byte #1: base
-	// rest : start<<8
+	// rest : upstream<<8
 	uintptr_t _packed;
-	char *cur, *end;
-	allocator upstream;
+	char *cur, *start, *end;
 } mem_arena;
 
 typedef char *mem_arena_mark;
@@ -43,6 +42,7 @@ typedef char *mem_arena_mark;
 NONNULL(1, 2) void arena_init(mem_arena *ar, allocator upstream, len_t sz);
 NONNULL(1) void arena_fini(mem_arena *ar);
 NONNULL(1) MALLOC_LIKE void *arena_alloc(mem_arena *ar, len_t sz);
+NONNULL(1) void arena_free(mem_arena *ar, void *mem, len_t sz);
 NONNULL(1) MALLOC_LIKE __attribute__((alloc_align(3))) void *
 	arena_alloc_align(mem_arena *ar, len_t sz, len_t align);
 

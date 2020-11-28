@@ -43,40 +43,42 @@ void xfree(void *mem)
 	free(mem);
 }
 
-static void arena_meta(void *restrict start, void *restrict next, uint8_t growths)
+static void arena_meta(void *restrict start, void *restrict next, len_t growths)
 {
-	// ew
-	*(void **) start = next;
-	((uint8_t *) start)[9] = growths;
+	memcpy(start, (const void *) &next, sizeof next); // ???
+	memcpy((char *) start + sizeof next, &growths, sizeof growths);
+}
+
+static len_t arena_growths(const mem_arena *ar)
+{
+	len_t growths;
+	memcpy(&growths, ar->start + sizeof (void *), sizeof growths);
+	return growths;
 }
 
 void arena_init(mem_arena *ar, allocator upstream, len_t sz)
 {
 	assert(sz > 16);
-	ar->upstream = upstream;
-	char *start = gen_alloc(ar->upstream, sz);
-	// char *start = xmalloc(sz);
+	ar->_packed = ALLOC_ARENA | ((uintptr_t) upstream << 8);
+	ar->start = gen_alloc(upstream, sz);
+	ar->cur = ar->start + ARENA_META;
+	ar->end = ar->start + sz;
+	arena_meta(ar->start, NULL, 0);
 	// the first 8 bytes are a `next` pointer
-	// the next 8 are for more metadata
-	// meta:
-	// 	byte #1 counts arena growths
-	ar->cur = start + ARENA_META;
-	arena_meta(start, NULL, 0);
-	ar->end = start + sz;
-	ar->_packed = ALLOC_ARENA | ((uintptr_t) start << 8);
-	// ar->_packed = ((uintptr_t) ALLOC_ARENA << 56) | (intptr_t) start;
+	// the next 8 are for # growths
 }
 
 void arena_fini(mem_arena *ar)
 {
-	void *cur = (void *) (ar->_packed >> 8);
-	len_t len = (char *) ar->end - (char *) cur;
+	allocator upstream = (allocator) (ar->_packed >> 8);
+	void *restrict cur = ar->start;
+	len_t len = ar->end - ar->start;
 	do {
-		void *next = *(void **) cur;
-		gen_free(ar->upstream, cur, len);
+		void *restrict next = *(void **) cur;
+		gen_free(upstream, cur, len);
 		cur = next;
 		len /= 2;
-		assert(ISPOW2(len) && len > 16);
+		assert(len > 16);
 	} while (cur);
 }
 
@@ -90,20 +92,29 @@ void *arena_alloc_align(mem_arena *ar, len_t sz, len_t align)
 	assert(ISPOW2(align));
 	char *new = (char *) ALIGN_UP_P2((intptr_t) ar->cur, align);
 	if (UNLIKELY(new + sz >= ar->end)) {
-		char *start = (void *) (ar->_packed >> 8);
-		len_t blk_sz = 2 * (ar->end - start);
+		len_t blk_sz = 2 * (ar->end - ar->start);
 		assert(blk_sz > (len_t) ARENA_META + sz + align);
-		void *blk = gen_alloc(ar->upstream, blk_sz);
-		arena_meta(blk, start, ((uint8_t *) start)[9]);
-		start = blk;
-		ar->end = start + blk_sz;
+
+		char *start = gen_alloc((allocator) (ar->_packed >> 8), blk_sz);
+		len_t growths = arena_growths(ar);
+		arena_meta(start, ar->start, growths + 1);
+		ar->start = start;
 		ar->cur = start + ARENA_META;
-		// assumes little-endian
-		ar->_packed = ALLOC_ARENA | ((uintptr_t) start << 8);
-		new = (char *) ALIGN_UP_P2((intptr_t) ar->cur, align);
+		ar->end = start + blk_sz;
+
+		new = (char *) ALIGN_UP_P2((uintptr_t) ar->cur, align);
 	}
 	ar->cur = new + sz;
 	return new;
+}
+
+void arena_free(mem_arena *ar, void *mem, len_t sz)
+{
+	if (ar->cur - sz <= (char *) mem) {
+		ar->cur = (char *) ALIGN_UP_P2((intptr_t )(ar->cur - sz), 16);
+	} else {
+		assert(0);
+	}
 }
 
 mem_arena_mark arena_mark(mem_arena *ar)
@@ -113,7 +124,7 @@ mem_arena_mark arena_mark(mem_arena *ar)
 
 void arena_rewind(mem_arena *ar, mem_arena_mark mark)
 {
-	assert(mark >= (char *) (ar->_packed >> 8) && mark < ar->end);
+	assert(mark >= (char *) ar->start && mark < ar->end);
 	ar->cur = mark;
 }
 

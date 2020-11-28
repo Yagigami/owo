@@ -31,6 +31,7 @@
 
 typedef ptrdiff_t len_t;
 // identifiers are never more than 32 (16?) characters, so they are very small,
+// TODO: just make strings values, and compare them all the time
 // however we can't embed them in a hashmap and we need 2 layers of indirection to get pointer statibility
 // maybe make identifiers 16 chars:
 //   store them inline, 16 byte aligned, no length info, followed by NULs

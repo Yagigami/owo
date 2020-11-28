@@ -7,15 +7,26 @@
 #include <string.h>
 
 
+// will do 6 sections for now:
+//   UNDEF, .text, .symtab, .strtab, .shstrtab, .rela.text
+enum {
+	SEC_UNDEF = 0,
+	SEC_TEXT,
+	SEC_SYMTAB,
+	SEC_STRTAB,
+	SEC_SHSTRTAB,
+	SEC_RELA_TEXT,
+	SEC_NUM,
+};
+
 static void pad(allocator al, vector *v, len_t n)
 {
 	vec_reserve(al, v, n, 1);
 	v->len += n;
 }
 
-stream elf_serialize_x64(allocator al, const gen_x64 *gen, const char *file)
+static Elf64_Ehdr default_elf_ehdr(void)
 {
-	vector v = { 0 };
 	Elf64_Ehdr ehdr;
 	ehdr.e_ident[EI_MAG0       ] = ELFMAG0;
 	ehdr.e_ident[EI_MAG1       ] = ELFMAG1;
@@ -26,31 +37,26 @@ stream elf_serialize_x64(allocator al, const gen_x64 *gen, const char *file)
 	ehdr.e_ident[EI_VERSION    ] = 1; // ELF version 1
 	ehdr.e_ident[EI_OSABI      ] = 0x00; // System V ABI
 	ehdr.e_ident[EI_ABIVERSION ] = 0x00;
-	ehdr.e_type = 0x1; // relocatable object file
 	ehdr.e_machine = 0x3e; // AMD64
-	ehdr.e_version = 1; // ELF version 1
+	ehdr.e_version = EV_CURRENT;
+	ehdr.e_flags = 0;
+	ehdr.e_ehsize = sizeof (Elf64_Ehdr);
+	ehdr.e_phentsize = sizeof (Elf64_Phdr);
+	ehdr.e_shentsize = sizeof (Elf64_Shdr);
+}
+
+stream elf_serialize_x64(allocator al, const gen_x64 *gen, const char *file)
+{
+	vector v = { 0 };
+	Elf64_Ehdr ehdr = default_elf_ehdr();
+	ehdr.e_type = ET_REL; // relocatable object file
 	ehdr.e_entry = 0x0; // no entry point
 	ehdr.e_phoff = 0; // no program header
-	// ehdr.e_shoff set later
-	ehdr.e_flags = 0;
-	ehdr.e_ehsize = sizeof ehdr;
-	ehdr.e_phentsize = sizeof (Elf64_Phdr);
 	ehdr.e_phnum = 0;
-	ehdr.e_shentsize = sizeof (Elf64_Shdr);
+	// ehdr.e_shoff set later
 	// ehdr.e_shnum set later
 	// ehdr.e_shstrndx set later
 
-	// will do 6 sections for now:
-	//   UNDEF, .text, .symtab, .strtab, .shstrtab, .rela.text
-	enum {
-		SEC_UNDEF = 0,
-		SEC_TEXT,
-		SEC_SYMTAB,
-		SEC_STRTAB,
-		SEC_SHSTRTAB,
-		SEC_RELA_TEXT,
-		SEC_NUM,
-	};
 	Elf64_Shdr shdr[SEC_NUM];
 	// section UNDEF
 	memset(shdr, 0, sizeof shdr[SEC_UNDEF]);
@@ -104,13 +110,7 @@ stream elf_serialize_x64(allocator al, const gen_x64 *gen, const char *file)
 	strtab.len += strlen(file) + 1;
 	len_t syms_idx = 3;
 	len_t code_offset = 0;
-	for (struct cg_sym *start = sm_mem(gen->syms), *end = start + sm_len(gen->syms)
-			, *it = start; it != end; it++) {
-		const struct cg_sym sym = *it;
-	// sm_iter(struct cg_sym, gen->syms, sym, {
-		// len_t l;
-		// const char *s = repr_ident(sym.name, &l);
-		// printf("\"%.*s\"\n", (int) l, s);
+	sm_iter(struct cg_sym, gen->syms, sym, {
 		cur = vec_reserve(al, &strtab, fb_len(sym.name) + 1, 1);
 		memcpy((char *) strtab.mem + strtab.len, fb_mem(sym.name), fb_len(sym.name));
 		syms[syms_idx].st_name = strtab.len;
@@ -123,14 +123,7 @@ stream elf_serialize_x64(allocator al, const gen_x64 *gen, const char *file)
 		syms[syms_idx].st_size = sym.size;
 		code_offset += sym.size;
 		syms_idx++;
-	}
-	// });
-
-	// printf("\n");
-	// for (const char *c = cur, *end = c + strtab.len; c != end; c++) {
-		// printf("%02x ", (unsigned) *c);
-	// }
-	// printf("\n");
+	});
 
 	shdr[SEC_STRTAB].sh_name = 15;
 	shdr[SEC_STRTAB].sh_type = SHT_STRTAB;
@@ -162,7 +155,6 @@ stream elf_serialize_x64(allocator al, const gen_x64 *gen, const char *file)
 	len_t sz = 0;
 	vec_reserve(al, &v, sizeof ehdr, 1);
 	v.len += sizeof ehdr;
-	// vec_extend(al, &v, &ehdr, sizeof ehdr, 1);
 	sz = ALIGN_UP_P2(sz + sizeof ehdr, shdr[SEC_TEXT].sh_addralign);
 	shdr[SEC_TEXT].sh_offset = sz;
 	vec_extend(al, &v, sm_mem(gen->insns), shdr[SEC_TEXT].sh_size, 1);
