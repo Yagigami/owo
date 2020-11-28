@@ -21,7 +21,7 @@ void test_token(void)
 	s.buf = 
 		"func main(argc: int, argv: string): int\n"
 		"{\n"
-		"	return = 0;\n"
+		"	return 0;\n"
 		"}\n"
 		;
 	s.len = strlen(s.buf);
@@ -46,7 +46,7 @@ void test_parser(void)
 	s.buf =
 		"func main(a: int@, b: int@@@@@@): int\n"
 		"{\n"
-		"	return = 0;\n"
+		"	return 0;\n"
 		"}\n"
 		;
 	s.len = strlen(s.buf);
@@ -66,7 +66,7 @@ void test_bytecode(void)
 	s.buf = 
 		"func main(): int"
 		"{\n"
-		"	return = 0;\n"
+		"	return 0;\n"
 		"}\n"
 		;
 	s.len = strlen(s.buf);

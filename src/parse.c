@@ -1,6 +1,9 @@
 #include <string.h>
 #include <assert.h>
 #include <stdalign.h>
+#include <stdnoreturn.h>
+#include <stdlib.h>
+#include <stdarg.h>
 
 #include "common.h"
 #include "ast.h"
@@ -24,6 +27,60 @@ struct block {
 	mem_temp tmp;
 	alignas (16) char mem[];
 };
+
+static noreturn void fatal_error(const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	vfprintf(stderr, fmt, args);
+	va_end(args);
+	assert(0);
+	exit(1);
+}
+
+static int is_token(parser *p, token_kind kind)
+{
+	return p->l.tok.kind == kind;
+}
+
+static int match_token(parser *p, token_kind kind)
+{
+	int i = is_token(p, kind);
+	if (i) lexer_next(&p->l);
+	return i;
+}
+
+static token expect_token(parser *p, token_kind kind)
+{
+	if (!is_token(p, kind))
+		fatal_error("expected token kind %d, got %d\n", kind, p->l.tok.kind);
+	token tok = p->l.tok;
+	lexer_next(&p->l);
+	return tok;
+}
+
+static int is_keyword(parser *p, ident_t kw)
+{
+	return is_token(p, TK_NAME) && p->l.tok.tid == kw;
+}
+
+static int match_keyword(parser *p, ident_t kw)
+{
+	int i = is_keyword(p, kw);
+	if (i) lexer_next(&p->l);
+	return i;
+}
+
+static void expect_keyword(parser *p, ident_t kw)
+{
+	if (!match_keyword(p, kw)) {
+		char kw_str[32] = { 0 };
+		len_t kw_len;
+		const char *kw_repr = repr_ident(kw, &kw_len);
+		memcpy(kw_str, kw_repr, kw_len);
+		fatal_error("expected keyword `%s`, got `%s`\n", kw_str, repr_ident(p->l.tok.tid, NULL));
+	}
+}
 
 void parser_init(parser *p, stream s)
 {
@@ -50,12 +107,12 @@ void parse(parser *p)
 	small_buf ctrs = 0;
 	while (1) {
 		lexer_next(&p->l);
-		if (p->l.tok.tid == kw_func) {
+		if (match_keyword(p, kw_func)) {
 			owo_construct ctr = parse_func(p);
 			sm_add(&p->mp, &ctrs, &ctr, PTRSZ);
 		}
 		else {
-			assert(p->l.tok.kind == TK_EOF);
+			assert(is_token(p, TK_EOF));
 			p->ast.ctrs = ctrs;
 			return;
 		}
@@ -64,30 +121,22 @@ void parse(parser *p)
 
 owo_type parse_type(parser *p)
 {
-	assert(p->l.tok.kind == TK_NAME);
-	assert(p->l.tok.tid == kw_int);
-	lexer_next(&p->l);
+	expect_keyword(p, kw_int);
 	owo_type t = owo_tint;
-	while (p->l.tok.kind == TK_AT) {
-		lexer_next(&p->l);
+	while (match_token(p, TK_AT))
 		t = owt_ptr(t);
-	}
 	return t;
 }
 
 owo_expr parse_expr(parser *p)
 {
-	assert(p->l.tok.kind == TK_INT);
+	assert(is_token(p, TK_INT));
 	return owe_int(p->l.tok.tint);
 }
 
 owo_stmt parse_stmt(parser *p)
 {
-	assert(p->l.tok.kind == TK_NAME);
-	assert(p->l.tok.tid == kw_return);
-	lexer_next(&p->l);
-	assert(p->l.tok.kind == TK_EQ);
-	lexer_next(&p->l);
+	expect_keyword(p, kw_return);
 	owo_expr rval = parse_expr(p);
 	return ows_sreturn(rval);
 }
@@ -95,45 +144,33 @@ owo_stmt parse_stmt(parser *p)
 small_buf parse_stmt_block(parser *p)
 {
 	small_buf body = 0;
-	assert(p->l.tok.kind == TK_LBRACE);
-	while (lexer_next(&p->l), p->l.tok.kind != TK_RBRACE) {
+	expect_token(p, TK_LBRACE);
+	while (!match_token(p, TK_RBRACE)) {
 		owo_stmt stmt = parse_stmt(p);
 		sm_add(&p->mp, &body, &stmt, PTRSZ);
+		lexer_next(&p->l);
 	}
-	lexer_next(&p->l);
 	return body;
 }
 
 owo_construct parse_func(parser *p)
 {
-	assert(p->l.tok.kind == TK_NAME);
-	assert(p->l.tok.tid == kw_func);
-	lexer_next(&p->l);
-	assert(p->l.tok.kind == TK_NAME);
-	ident_t *name = (ident_t *) pmap_push(&p->l.ids, (void *) p->l.tok.tid, identifier_hash);
-	lexer_next(&p->l);
-	assert(p->l.tok.kind == TK_LPAREN);
-	lexer_next(&p->l);
+	token tok = expect_token(p, TK_NAME);
+	ident_t name = tok.tid;
+	expect_token(p, TK_LPAREN);
 	small_buf params = 0;
-	for (int i = 0; p->l.tok.kind != TK_RPAREN; i++) {
-		if (i) {
-			assert(p->l.tok.kind == TK_COMMA);
-			lexer_next(&p->l);
-		}
+	for (int i = 0; !match_token(p, TK_RPAREN); i++) {
+		if (i)
+			expect_token(p, TK_COMMA);
+		tok = expect_token(p, TK_NAME);
+		expect_token(p, TK_COLON);
 		struct owo_param param;
-		assert(p->l.tok.kind == TK_NAME);
-		param.name = *(ident_t *) pmap_push(&p->l.ids, (void *) p->l.tok.tid, identifier_hash);
-		lexer_next(&p->l);
-		assert(p->l.tok.kind == TK_COLON);
-		lexer_next(&p->l);
 		param.type = parse_type(p);
 		sm_add(&p->mp, &params, &param, sizeof param);
 	}
-	lexer_next(&p->l);
-	assert(p->l.tok.kind == TK_COLON);
-	lexer_next(&p->l);
+	expect_token(p, TK_COLON);
 	owo_type ret = parse_type(p);
 	small_buf body = parse_stmt_block(p);
-	return owc_funcdef(&p->mp, *name, ret, params, body);
+	return owc_funcdef(&p->mp, name, ret, params, body);
 }
 
