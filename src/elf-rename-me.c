@@ -43,6 +43,7 @@ static Elf64_Ehdr default_elf_ehdr(void)
 	ehdr.e_ehsize = sizeof (Elf64_Ehdr);
 	ehdr.e_phentsize = sizeof (Elf64_Phdr);
 	ehdr.e_shentsize = sizeof (Elf64_Shdr);
+	return ehdr;
 }
 
 stream elf_serialize_x64(allocator al, const gen_x64 *gen, const char *file)
@@ -111,10 +112,11 @@ stream elf_serialize_x64(allocator al, const gen_x64 *gen, const char *file)
 	len_t syms_idx = 3;
 	len_t code_offset = 0;
 	sm_iter(struct cg_sym, gen->syms, sym, {
-		cur = vec_reserve(al, &strtab, fb_len(sym.name) + 1, 1);
-		memcpy((char *) strtab.mem + strtab.len, fb_mem(sym.name), fb_len(sym.name));
+		len_t sym_len = ident_len(&sym.name);
+		cur = vec_reserve(al, &strtab, sym_len + 1, 1);
+		memcpy((char *) strtab.mem + strtab.len, sym.name.buf, sym_len);
 		syms[syms_idx].st_name = strtab.len;
-		strtab.len += fb_len(sym.name);
+		strtab.len += sym_len;
 		cur[strtab.len++] = '\0';
 		syms[syms_idx].st_info = ELF64_ST_INFO(STB_GLOBAL, STT_NOTYPE);
 		syms[syms_idx].st_other = STV_DEFAULT;

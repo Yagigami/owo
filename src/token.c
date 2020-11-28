@@ -8,25 +8,6 @@
 #include "token.h"
 
 
-hash_t identifier_hash(key_t k)
-{
-	ident_t id = (ident_t) k;
-	hash_t h = 0;
-	const char *restrict str = fb_mem(id);
-	for (len_t i = 0, len = sm_len(id); i < len; i++)
-		h += str[i] * (i + 1);
-	return h;
-}
-
-int identifier_cmp(key_t k1, key_t k2)
-{
-	ident_t i1 = (ident_t) k1, i2 = (ident_t) k2;
-	len_t l1 = fb_len(i1), l2 = fb_len(i2);
-	int diff = l1 - l2;
-	if (diff) return diff;
-	return strncmp(fb_mem(i1), fb_mem(i2), l1);
-}
-
 void lexer_init(lexer *l, allocator al, stream s)
 {
 	l->str = s.buf;
@@ -35,7 +16,6 @@ void lexer_init(lexer *l, allocator al, stream s)
 	assert(s.buf[s.len] == '\0');
 	memset(&l->tok, 0, sizeof l->tok);
 #endif
-	pmap_init(&l->ids, al);
 }
 
 static char *lex_name(const char *str)
@@ -51,11 +31,17 @@ static char *lex_space(const char *str)
 	return (char *) str;
 }
 
+ident_t ident_from_string(const char *start, len_t len)
+{
+	ident_t id = { 0 };
+	memcpy(id.buf, start, len);
+	return id;
+}
+
 void lexer_next(lexer *l)
 {
 space:  ;
 	char *start = l->str;
-	ident_t name;
 	switch (*l->str) {
 	case '\0':
 		l->tok.kind = TK_EOF;
@@ -69,8 +55,7 @@ space:  ;
 			fprintf(stderr, "name \"%.*s\" is too long.\n", (int) (l->str - start), start);
 			__builtin_unreachable();
 		}
-		name = fb_set(l->str - start, start);
-		l->tok.tid = *(ident_t *) pmap_intern(&l->ids, (void *) name, identifier_hash, identifier_cmp);
+		l->tok.tid = ident_from_string(start, l->str - start);
 		l->tok.kind = TK_NAME;
 		return;
 	case '0' ... '9':
@@ -117,9 +102,9 @@ void token_print(FILE *f, token t)
 		break;
 	case TK_NAME:
 		fprintf(f, "id[%d](%.*s)\n",
-				(int) fb_len(t.tid),
-				(int) fb_len(t.tid),
-				(char *) fb_mem(t.tid));
+				(int) ident_len(&t.tid),
+				(int) ident_len(&t.tid),
+				t.tid.buf);
 		break;
 	case TK_STR:
 		fprintf(f, "str[%d](%.*s)\n",
@@ -138,6 +123,5 @@ void token_print(FILE *f, token t)
 
 void lexer_fini(lexer *l)
 {
-	xfree(l->ids.mem);
-	// we don't allocate for names so no need to free them
+	(void) l;
 }

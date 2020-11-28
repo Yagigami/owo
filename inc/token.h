@@ -74,7 +74,6 @@ typedef struct token {
 
 typedef struct lexer {
 	allocator al;
-	ptrmap ids;
 	char *str;
 	token tok;
 } lexer;
@@ -84,8 +83,7 @@ void lexer_next(lexer *l);
 void token_print(FILE *f, token t);
 void lexer_fini(lexer *l);
 
-hash_func identifier_hash;
-cmp_func identifier_cmp;
+ident_t ident_from_string(const char *start, len_t len);
 
 #include "endcpp.h"
 

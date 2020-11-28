@@ -18,6 +18,9 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <limits.h>
+#include <stdalign.h>
+#include <immintrin.h>
+#include <string.h>
 
 #define BAD __attribute__((error("bad")))
 #define DEPRECATED(reason) __attribute__((deprecated(# reason)))
@@ -39,7 +42,7 @@ typedef ptrdiff_t len_t;
 //     "message"
 //     6d 65 73 73 | 61 67 65 00 | 00 00 00 00 | 00 00 00 00
 //   to get the length: (__m128i)s: __builtin_popcount(_mm_movemask_epi8(_mm_cmpgt_epi8(s,_mm_setzero_s128())))
-typedef uintptr_t ident_t; // fixed_buf
+typedef struct { alignas(16) char buf[16]; } ident_t; // fixed_buf
 typedef void *restrict allocator;
 typedef uint8_t byte_t;
 
@@ -50,7 +53,22 @@ typedef struct stream {
 
 #include "buf.h"
 
-const char *repr_ident(ident_t id, len_t *len);
+static inline len_t ident_len(const ident_t *id)
+{
+	return __builtin_popcount(_mm_movemask_epi8(_mm_cmpgt_epi8(_mm_load_si128((__m128i *) id->buf), _mm_setzero_si128())));
+}
+
+// zero if the strings are equal, otherwise nonzero
+static inline int ident_cmp(ident_t i1, ident_t i2)
+{
+	int64_t i1_64[2], i2_64[2];
+	memcpy(i1_64, i1.buf, sizeof i1);
+	memcpy(i2_64, i2.buf, sizeof i2);
+	int64_t diff[2];
+	diff[0] = i1_64[0] - i2_64[0];
+	diff[1] = i1_64[1] - i1_64[1];
+	return diff[0] | diff[1];
+}
 
 #include "endcpp.h"
 

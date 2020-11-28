@@ -11,16 +11,9 @@
 #include "alloc.h"
 
 
-#define X(w) ident_t kw_ ## w;
+#define X(w) ident_t kw_ ## w = { .buf = # w };
 KEYWORDS()
 #undef X
-
-void init_keywords(ptrmap *m)
-{
-#define X(w) kw_ ## w = *(ident_t *) pmap_push(m, (void *) fb_set(sizeof (# w) - 1, # w), identifier_hash);
-	KEYWORDS()
-#undef X
-}
 
 enum { N = 16 * 1024 };
 struct block {
@@ -61,7 +54,7 @@ static token expect_token(parser *p, token_kind kind)
 
 static int is_keyword(parser *p, ident_t kw)
 {
-	return is_token(p, TK_NAME) && p->l.tok.tid == kw;
+	return is_token(p, TK_NAME) && ident_cmp(p->l.tok.tid, kw) == 0;
 }
 
 static int match_keyword(parser *p, ident_t kw)
@@ -74,11 +67,7 @@ static int match_keyword(parser *p, ident_t kw)
 static void expect_keyword(parser *p, ident_t kw)
 {
 	if (!match_keyword(p, kw)) {
-		char kw_str[32] = { 0 };
-		len_t kw_len;
-		const char *kw_repr = repr_ident(kw, &kw_len);
-		memcpy(kw_str, kw_repr, kw_len);
-		fatal_error("expected keyword `%s`, got `%s`\n", kw_str, repr_ident(p->l.tok.tid, NULL));
+		fatal_error("expected keyword `%.*s`, got `%.*s`\n", (int) ident_len(&kw), kw.buf, (int) ident_len(&p->l.tok.tid), p->l.tok.tid.buf);
 	}
 }
 
@@ -90,7 +79,6 @@ void parser_init(parser *p, stream s)
 	struct block *blk = gen_alloc(&system_allocator, sizeof *blk + N);
 	tmp_init(&blk->tmp, NULL, &blk->mem, N);
 	mp_init(&p->mp, &blk->tmp, 16, 4096);
-	init_keywords(&p->l.ids);
 }
 
 void parser_fini(parser *p)

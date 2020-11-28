@@ -71,7 +71,7 @@ void gx64t_bc(gen_x64 *gen, bc_unit *u)
 void gx64_dump(FILE *f, const gen_x64 *gen)
 {
 	sm_iter(const struct cg_sym, gen->syms, sym, {
-		fprintf(f, "%s(%d:%d)\n", repr_ident(sym.name, NULL), sym.idx, sym.size);
+		fprintf(f, "%.*s(%d:%d)\n", (int) ident_len(&sym.name), sym.name.buf, sym.idx, sym.size);
 	});
 	int total = 0;
 	static const int w = 20;

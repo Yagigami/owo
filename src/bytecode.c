@@ -14,7 +14,7 @@ void bcu_dump(FILE *f, const bc_unit *u)
 
 void bcu_dump_fn(FILE *f, const bc_funcdef *fn)
 {
-	fprintf(f, "fn(\"%s\")\n", repr_ident(fn->name, NULL));
+	fprintf(f, "fn(\"%.*s\")\n", (int) ident_len(&fn->name), fn->name.buf);
 	sm_iter(bc_instr, fn->insns, ins, {
 		uint8_t repr[4];
 		memcpy(repr, &ins, sizeof ins);

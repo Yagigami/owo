@@ -23,11 +23,10 @@ void test_token(void)
 		"{\n"
 		"	return 0;\n"
 		"}\n"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 		;
 	s.len = strlen(s.buf);
 	lexer_init(&l, &system_allocator, s);
-	extern void init_keywords(ptrmap *m);
-	init_keywords(&l.ids);
 
 	do {
 		lexer_next(&l);
@@ -48,6 +47,7 @@ void test_parser(void)
 		"{\n"
 		"	return 0;\n"
 		"}\n"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 		;
 	s.len = strlen(s.buf);
 	parser_init(&p, s);
@@ -68,6 +68,7 @@ void test_bytecode(void)
 		"{\n"
 		"	return 0;\n"
 		"}\n"
+		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 		;
 	s.len = strlen(s.buf);
 	parser_init(&p, s);
