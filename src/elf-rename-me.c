@@ -110,7 +110,6 @@ stream elf_serialize_x64(allocator al, const gen_x64 *gen, const char *file)
 	memcpy(cur + strtab.len, file, strlen(file) + 1);
 	strtab.len += strlen(file) + 1;
 	len_t syms_idx = 3;
-	len_t code_offset = 0;
 	sm_iter(struct cg_sym, gen->syms, sym, {
 		len_t sym_len = ident_len(&sym.name);
 		cur = vec_reserve(al, &strtab, sym_len + 1, 1);
@@ -121,9 +120,8 @@ stream elf_serialize_x64(allocator al, const gen_x64 *gen, const char *file)
 		syms[syms_idx].st_info = ELF64_ST_INFO(STB_GLOBAL, STT_NOTYPE);
 		syms[syms_idx].st_other = STV_DEFAULT;
 		syms[syms_idx].st_shndx = SEC_TEXT;
-		syms[syms_idx].st_value = code_offset;
+		syms[syms_idx].st_value = sym.idx;
 		syms[syms_idx].st_size = sym.size;
-		code_offset += sym.size;
 		syms_idx++;
 	});
 

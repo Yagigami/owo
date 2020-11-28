@@ -8,10 +8,9 @@
 #include "token.h"
 
 
-void lexer_init(lexer *l, allocator al, stream s)
+void lexer_init(lexer *l, stream s)
 {
 	l->str = s.buf;
-	l->al = al;
 #ifndef NDEBUG
 	assert(s.buf[s.len] == '\0');
 	memset(&l->tok, 0, sizeof l->tok);

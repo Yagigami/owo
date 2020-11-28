@@ -69,7 +69,12 @@ void *sm_shrink_into(allocator al, small_buf *restrict dst, small_buf src, len_t
 void *sm_fit(allocator al, small_buf *b, len_t n, len_t objsz);
 void *sm_reserve(allocator al, small_buf *b, len_t n, len_t objsz);
 
-// MUST BE 1 ARGUMENT ONLY
+// example use ```c
+// 	sm_iter(float, my_buf, x, {
+// 		float y = f(x);
+// 		printf("f(%f) = %f\n", x, y);
+// 	});
+// ```
 #define sm_iter(T, buf, it, ...) \
 	do { \
 		T *_sm_iter_start_ ## it = sm_mem((buf)); \

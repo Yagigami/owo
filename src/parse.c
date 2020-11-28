@@ -73,7 +73,7 @@ static void expect_keyword(parser *p, ident_t kw)
 
 void parser_init(parser *p, stream s)
 {
-	lexer_init(&p->l, &system_allocator, s);
+	lexer_init(&p->l, s);
 	ast_init(&p->ast);
 	// TODO: obviously not ideal
 	struct block *blk = gen_alloc(&system_allocator, sizeof *blk + N);

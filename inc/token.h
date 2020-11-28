@@ -73,12 +73,11 @@ typedef struct token {
 } token;
 
 typedef struct lexer {
-	allocator al;
-	char *str;
 	token tok;
+	char *str;
 } lexer;
 
-void lexer_init(lexer *l, allocator al, stream s);
+void lexer_init(lexer *l, stream s);
 void lexer_next(lexer *l);
 void token_print(FILE *f, token t);
 void lexer_fini(lexer *l);

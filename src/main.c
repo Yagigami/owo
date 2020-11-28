@@ -26,7 +26,7 @@ void test_token(void)
 		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 		;
 	s.len = strlen(s.buf);
-	lexer_init(&l, &system_allocator, s);
+	lexer_init(&l, s);
 
 	do {
 		lexer_next(&l);

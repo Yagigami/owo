@@ -15,8 +15,6 @@ struct owo_ast {
 	small_buf ctrs; // PTR
 };
 
-// typedef struct owo_funcdef owo_funcdef;
-
 typedef enum owo_ckind owo_cbase;
 typedef enum owo_skind owo_sbase;
 typedef enum owo_ekind owo_ebase;
