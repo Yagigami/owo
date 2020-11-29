@@ -1,7 +1,6 @@
 #include <string.h>
 #include <assert.h>
 #include <stdalign.h>
-#include <stdnoreturn.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
@@ -21,16 +20,7 @@ struct block {
 	alignas (16) char mem[];
 };
 
-static noreturn void fatal_error(const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
-	va_end(args);
-	assert(0);
-	exit(1);
-}
-
+// TODO: maybe make those functions take a lexer...
 static int is_token(parser *p, token_kind kind)
 {
 	return p->l.tok.kind == kind;
@@ -46,7 +36,14 @@ static int match_token(parser *p, token_kind kind)
 static token expect_token(parser *p, token_kind kind)
 {
 	if (!is_token(p, kind))
-		fatal_error("expected token kind %d, got %d\n", kind, p->l.tok.kind);
+		fatal_error(ERR_SYNTAX, "expected token kind %d, got %d", kind, p->l.tok.kind);
+	token tok = p->l.tok;
+	lexer_next(&p->l);
+	return tok;
+}
+
+static token consume_token(parser *p)
+{
 	token tok = p->l.tok;
 	lexer_next(&p->l);
 	return tok;
@@ -67,7 +64,7 @@ static int match_keyword(parser *p, ident_t kw)
 static void expect_keyword(parser *p, ident_t kw)
 {
 	if (!match_keyword(p, kw)) {
-		fatal_error("expected keyword `%.*s`, got `%.*s`\n", (int) ident_len(&kw), kw.buf, (int) ident_len(&p->l.tok.tid), p->l.tok.tid.buf);
+		fatal_error(ERR_SYNTAX, "expected keyword `%.*s`, got `%.*s`", (int) ident_len(&kw), kw.buf, (int) ident_len(&p->l.tok.tid), p->l.tok.tid.buf);
 	}
 }
 
@@ -93,8 +90,8 @@ void parser_fini(parser *p)
 void parse(parser *p)
 {
 	small_buf ctrs = 0;
+	lexer_next(&p->l);
 	while (1) {
-		lexer_next(&p->l);
 		if (match_keyword(p, kw_func)) {
 			owo_construct ctr = parse_func(p);
 			sm_add(&p->mp, &ctrs, &ctr, PTRSZ);
@@ -118,15 +115,31 @@ owo_type parse_type(parser *p)
 
 owo_expr parse_expr(parser *p)
 {
-	assert(is_token(p, TK_INT));
-	return owe_int(p->l.tok.tint);
+	token tok = consume_token(p);
+	switch (tok.kind) {
+	case TK_INT:
+		return owe_int(tok.tint);
+	default:
+		fatal_error(ERR_SYNTAX, "unexpected token %d in expression", tok.kind);
+	}
 }
 
 owo_stmt parse_stmt(parser *p)
 {
-	expect_keyword(p, kw_return);
-	owo_expr rval = parse_expr(p);
-	return ows_sreturn(rval);
+	owo_stmt stmt;
+	if (match_keyword(p, kw_var)) {
+		ident_t name = expect_token(p, TK_NAME).tid;
+		expect_token(p, TK_COLON);
+		owo_type type = parse_type(p);
+		expect_token(p, TK_EQ);
+		owo_expr init = parse_expr(p);
+		stmt = ows_var(name, type, init);
+	} else if (match_keyword(p, kw_return)) {
+		owo_expr rval = parse_expr(p);
+		stmt = ows_sreturn(rval);
+	} else assert(0);
+	expect_token(p, TK_SCOLON);
+	return stmt;
 }
 
 small_buf parse_stmt_block(parser *p)
@@ -136,7 +149,6 @@ small_buf parse_stmt_block(parser *p)
 	while (!match_token(p, TK_RBRACE)) {
 		owo_stmt stmt = parse_stmt(p);
 		sm_add(&p->mp, &body, &stmt, PTRSZ);
-		lexer_next(&p->l);
 	}
 	return body;
 }

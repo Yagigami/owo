@@ -45,6 +45,7 @@ void test_parser(void)
 	s.buf =
 		"func main(a: int@, b: int@@@@@@): int\n"
 		"{\n"
+		"	var x: int = 13;\n"
 		"	return 0;\n"
 		"}\n"
 		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"

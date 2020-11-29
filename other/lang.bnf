@@ -18,7 +18,7 @@ statement ::= variable_declaration ';'
 	    | expression ';'
             ( | closure_definition ';' )
 
-variable_declaration ::= 'let' object_declaration [ '=' expression ]
+variable_declaration ::= 'var' object_declaration '=' expression
 
 compound_statement ::= if_statement
                      | while_statement

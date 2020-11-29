@@ -48,6 +48,7 @@ space:  ;
 	case ' ': case '\t': case '\n': case '\f': case '\v':
 		l->str = lex_space(l->str);
 		goto space;
+	// those that do full lexing don't need to increment `l->str` so they should return immediately
 	case 'a' ... 'z': case 'A' ... 'Z': case '_':
 		l->str = lex_name(l->str);
 		if (l->str - start > 32) {
@@ -63,7 +64,7 @@ space:  ;
 		while (isdigit(*l->str)) {
 			l->tok.tint = (l->tok.tint * 10) + *l->str++ - '0';
 		}
-		break;
+		return;
 	case '/':
 		if (*++l->str == '*') {
 			while (l->str[0] != '*' && l->str[1] != '/') l->str++;

@@ -29,6 +29,7 @@ owo_type parse_type(parser *p);
 	X(if)		\
 	X(int)		\
 	X(return)	\
+	X(var)		\
 	X(while)
 
 #define X(w) extern ident_t kw_ ## w;

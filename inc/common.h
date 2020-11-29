@@ -21,6 +21,7 @@
 #include <stdalign.h>
 #include <immintrin.h>
 #include <string.h>
+#include <stdnoreturn.h>
 
 #define BAD __attribute__((error("bad")))
 #define DEPRECATED(reason) __attribute__((deprecated(# reason)))
@@ -33,16 +34,12 @@
 #define thread_local _Thread_local
 
 typedef ptrdiff_t len_t;
-// identifiers are never more than 32 (16?) characters, so they are very small,
-// TODO: just make strings values, and compare them all the time
-// however we can't embed them in a hashmap and we need 2 layers of indirection to get pointer statibility
-// maybe make identifiers 16 chars:
+#define IDENT_MAXLEN 16
 //   store them inline, 16 byte aligned, no length info, followed by NULs
 //   example:
 //     "message"
 //     6d 65 73 73 | 61 67 65 00 | 00 00 00 00 | 00 00 00 00
-//   to get the length: (__m128i)s: __builtin_popcount(_mm_movemask_epi8(_mm_cmpgt_epi8(s,_mm_setzero_s128())))
-typedef struct { alignas(16) char buf[16]; } ident_t; // fixed_buf
+typedef struct { alignas(16) char buf[IDENT_MAXLEN]; } ident_t;
 typedef void *restrict allocator;
 typedef uint8_t byte_t;
 
@@ -55,7 +52,14 @@ typedef struct stream {
 
 static inline len_t ident_len(const ident_t *id)
 {
-	return __builtin_popcount(_mm_movemask_epi8(_mm_cmpgt_epi8(_mm_load_si128((__m128i *) id->buf), _mm_setzero_si128())));
+	return __builtin_popcount(
+			_mm_movemask_epi8(
+				_mm_cmpgt_epi8(
+					_mm_load_si128((__m128i *) id->buf),
+					_mm_setzero_si128()
+				)
+			)
+		);
 }
 
 // zero if the strings are equal, otherwise nonzero
@@ -69,6 +73,24 @@ static inline int ident_cmp(ident_t i1, ident_t i2)
 	diff[1] = i1_64[1] - i1_64[1];
 	return diff[0] | diff[1];
 }
+
+typedef enum {
+	ERR_UNKNOWN,
+	ERR_TEXT,
+	ERR_SYNTAX,
+	ERR_NUM,
+} err_kind;
+
+#define ERRSTR_ERR_UNKNOWN "<unknown>"
+#define ERRSTR_ERR_TEXT    "invalid text"
+#define ERRSTR_ERR_SYNTAX  "syntax error"
+
+#define fatal_error(err, fmt, ...) \
+	do { \
+		fprintf(stderr, "[" ERRSTR_ ## err "]: " fmt "\n", ## __VA_ARGS__); \
+		assert(0); \
+		exit(1); \
+	} while (0)
 
 #include "endcpp.h"
 

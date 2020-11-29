@@ -8,6 +8,9 @@
 #include "alloc.h"
 
 
+// TODO: find a naming scheme to easily make the difference
+// 	 between types and ast-construction functions
+
 typedef struct owo_ast owo_ast;
 
 struct owo_ast {
@@ -15,6 +18,8 @@ struct owo_ast {
 	small_buf ctrs; // PTR
 };
 
+// put base types somewhere else for better layout
+// likely packed in the opaque pointers
 typedef enum owo_ckind owo_cbase;
 typedef enum owo_skind owo_sbase;
 typedef enum owo_ekind owo_ebase;
@@ -84,6 +89,13 @@ struct owo_sreturn {
 	owo_expr rval;
 };
 
+struct owo_svar {
+	owo_sbase base;
+	ident_t name;
+	owo_type type;
+	owo_expr init;
+};
+
 struct owo_eint {
 	owo_ebase base;
 	uint64_t val;
@@ -123,6 +135,7 @@ owo_expr owe_unary(token_kind op, owo_expr expr);
 owo_construct owc_funcdef(allocator al, ident_t name, owo_type ret, small_buf params, small_buf body);
 
 owo_stmt ows_sreturn(owo_expr rval);
+owo_stmt ows_var(ident_t name, owo_type type, owo_expr init);
 
 void ast_init(owo_ast *ast);
 void ast_fini(owo_ast *ast);

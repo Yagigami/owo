@@ -65,6 +65,16 @@ owo_stmt ows_sreturn(owo_expr rval)
 	return &stmt->base;
 }
 
+owo_stmt ows_var(ident_t name, owo_type type, owo_expr init)
+{
+	struct owo_svar *stmt = ast_alloc(sizeof *stmt);
+	stmt->base = OWS_VAR;
+	stmt->name = name;
+	stmt->type = type;
+	stmt->init = init;
+	return &stmt->base;
+}
+
 owo_type owt_ptr(owo_type t)
 {
 	struct owo_tptr *type = ast_alloc(sizeof *type);

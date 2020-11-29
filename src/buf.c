@@ -43,7 +43,7 @@ void *sm_shrink_into(allocator al, small_buf *restrict dst, small_buf src, len_t
 	}
 	void *new = gen_realloc(al, (1 << log2_cap) * objsz, sm_mem(src), sm_cap(src) * objsz);
 	assert(IS_NICE_PTR16(new));
-	sm_set(len, log2_cap, new);
+	*dst = sm_set(len, log2_cap, new);
 	return new;
 }
 

@@ -63,6 +63,9 @@ bc_funcdef bct_func(bc_unit *u, struct owo_cfuncdef *owo_fn)
 		sm_add(u->al, &bc_fn.insns, &ins, sizeof ins);
 		return bc_fn;
 		}
+	case OWS_VAR: {
+		fatal_error(ERR_UNKNOWN, "variables are not handled yet!");
+	}
 	case OWS_NONE: case OWS_NUM:
 	default:
 		__builtin_unreachable();
