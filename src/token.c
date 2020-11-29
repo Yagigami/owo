@@ -30,10 +30,15 @@ static char *lex_space(const char *str)
 	return (char *) str;
 }
 
-ident_t ident_from_string(const char *start, len_t len)
+ident_t ident_from_string(const char *start, const char *end)
 {
-	ident_t id = { 0 };
-	memcpy(id.buf, start, len);
+	ident_t id;
+	char save[16];
+	char *end_   = (char *) end  ;
+	memcpy(save, end_, 16);
+	memset(end_, 0, 16);
+	memcpy(id.buf, start, 16);
+	memcpy(end_, save, 16);
 	return id;
 }
 
@@ -55,7 +60,7 @@ space:  ;
 			fprintf(stderr, "name \"%.*s\" is too long.\n", (int) (l->str - start), start);
 			__builtin_unreachable();
 		}
-		l->tok.tid = ident_from_string(start, l->str - start);
+		l->tok.tid = ident_from_string(start, l->str);
 		l->tok.kind = TK_NAME;
 		return;
 	case '0' ... '9':

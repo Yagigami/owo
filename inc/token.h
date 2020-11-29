@@ -82,7 +82,10 @@ void lexer_next(lexer *l);
 void token_print(FILE *f, token t);
 void lexer_fini(lexer *l);
 
-ident_t ident_from_string(const char *start, len_t len);
+// dangerous, temporarily overwrites end[0:15]
+// 	start[0:15] valid read
+// 	end  [0:15] valid read/write
+ident_t ident_from_string(const char *start, const char *end);
 
 #include "endcpp.h"
 

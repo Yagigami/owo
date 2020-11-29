@@ -26,6 +26,7 @@ void test_token(void)
 		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 		;
 	s.len = strlen(s.buf);
+	s.buf = memcpy(xmalloc(s.len + 16), s.buf, s.len + 16);
 	lexer_init(&l, s);
 
 	do {
@@ -34,6 +35,7 @@ void test_token(void)
 	} while (l.tok.kind != TK_EOF);
 
 	lexer_fini(&l);
+	xfree(s.buf);
 	printf("\n\n");
 }
 
@@ -51,9 +53,11 @@ void test_parser(void)
 		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 		;
 	s.len = strlen(s.buf);
+	s.buf = memcpy(xmalloc(s.len + 16), s.buf, s.len + 16);
 	parser_init(&p, s);
 	parse(&p);
 	parser_fini(&p);
+	xfree(s.buf);
 	printf("\n\n");
 }
 
@@ -72,6 +76,7 @@ void test_bytecode(void)
 		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 		;
 	s.len = strlen(s.buf);
+	s.buf = memcpy(xmalloc(s.len + 16), s.buf, s.len + 16);
 	parser_init(&p, s);
 	parse(&p);
 
@@ -90,6 +95,7 @@ void test_bytecode(void)
 	gx64_fini(&g);
 	bcu_fini(&u);
 	parser_fini(&p);
+	xfree(s.buf);
 
 	printf("\n\n");
 }

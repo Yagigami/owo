@@ -137,7 +137,7 @@ owo_stmt parse_stmt(parser *p)
 	} else if (match_keyword(p, kw_return)) {
 		owo_expr rval = parse_expr(p);
 		stmt = ows_sreturn(rval);
-	} else assert(0);
+	} else __builtin_unreachable();
 	expect_token(p, TK_SCOLON);
 	return stmt;
 }

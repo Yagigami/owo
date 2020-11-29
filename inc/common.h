@@ -74,6 +74,7 @@ static inline int ident_cmp(ident_t i1, ident_t i2)
 	return diff[0] | diff[1];
 }
 
+// TODO: find a way for the compiler to never "inline" fatal_error
 typedef enum {
 	ERR_UNKNOWN,
 	ERR_TEXT,
