@@ -20,60 +20,57 @@ void pmap_init(ptrmap *m, allocator al)
 	m->upstream = al;
 }
 
-key_t *pmap_find(ptrmap *m, key_t k, hash_func *fn, cmp_func *cmp)
+key_t pmap_find(ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz)
 {
 	len_t capm1 = (1 << m->log2_cap) - 1;
-	hash_t hash = fn(k);
 	uint8_t *meta = m->mem;
-	key_t *buf = (key_t *) (meta + capm1 + 1);
+	uint8_t *buf  = meta + capm1 + 1;
 	if (!meta) return NULL;
-	for (len_t hi = hash >> 7, lo = PMAP_FULL | (hash & 0x7F), i = hi & capm1;; i = (i + 1) & capm1) {
+	for (len_t hi = hash >> 7, lo = PMAP_FULL | (hash & 0x7F),
+			i = hi & capm1;; i = (i + 1) & capm1) {
 		if (meta[i] == PMAP_EMPTY) return NULL;
 		if (meta[i] != lo) continue;
-		if (cmp(buf[i], k) == 0) return buf + i;
+		uint8_t *cur = buf + i * objsz;
+		if (cmp(cur, k) == 0) return cur;
 	}
 }
 
-key_t *pmap_push(ptrmap *m, key_t k, hash_func *fn)
+key_t pmap_push(ptrmap *m, hash_t hash, len_t objsz)
 {
-	pmap_reserve(m, m->len + 1);
+	pmap_reserve(m, m->len + 1, objsz);
 	len_t capm1 = (1 << m->log2_cap) - 1;
-	hash_t hash = fn(k);
 	uint8_t *meta = m->mem;
-	key_t *buf = (key_t *) (meta + capm1 + 1);
-	for (len_t hi = hash >> 7, lo = PMAP_FULL | (hash & 0x7F), i = hi & capm1;; i = (i + 1) & capm1) {
+	for (len_t hi = hash >> 7, lo = PMAP_FULL | (hash & 0x7F),
+			i = hi & capm1;; i = (i + 1) & capm1) {
 		if (meta[i] & PMAP_FULL) continue;
 		meta[i] = lo;
-		buf[i] = k;
 		m->len++;
-		return buf + i;
+		return (meta + capm1 + 1) + i * objsz;
 	}
-	__builtin_unreachable();
 }
 
-key_t *pmap_intern(ptrmap *m, key_t k, hash_func *fn, cmp_func *cmp)
+key_t pmap_intern(ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz)
 {
-	pmap_reserve(m, m->len + 1);
+	pmap_reserve(m, m->len + 1, objsz);
 	len_t capm1 = (1 << m->log2_cap) - 1;
-	hash_t hash = fn(k);
 	uint8_t *meta = m->mem;
-	key_t   *buf  = (key_t *) (meta + capm1 + 1);
+	uint8_t *buf  = meta + capm1 + 1;
 	// no need for the null check in this case
 	for (len_t high = hash >> 7, low = PMAP_FULL | (hash & 0x7F),
 			i = high & capm1;; i = (i + 1) & capm1) {
+		uint8_t *cur = buf + i * objsz;
 		if ((meta[i] & PMAP_FULL) == 0) {
 			meta[i] = low;
-			buf [i] = k;
+			// buf [i] = k;
 			m->len++;
-			return buf + i;
+			return cur;
 		}
 		if (meta[i] != low) continue;
-		if (cmp(buf[i], k) == 0) return buf + i;
+		if (cmp(cur, k) == 0) return cur;
 	}
-	__builtin_unreachable();
 }
 
-void pmap_reserve(ptrmap *m, len_t n)
+void pmap_reserve(ptrmap *m, len_t n, len_t objsz)
 {
 	len_t cap = 1 << m->log2_cap;
 	if (n < PMAP_MIN_CAP) n = PMAP_MIN_CAP;
@@ -83,9 +80,9 @@ void pmap_reserve(ptrmap *m, len_t n)
 		len_t new_cap = 1 << l2;
 		void *mem = gen_realloc(
 				m->upstream,
-				new_cap * (1 + sizeof (key_t)),
+				new_cap * (1 + objsz),
 				m->mem,
-				cap * sizeof (key_t)
+				cap * objsz
 		);
 		assert(((intptr_t) mem & 0xF) == 0);
 		memset(mem, PMAP_EMPTY, new_cap);

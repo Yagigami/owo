@@ -14,7 +14,7 @@ typedef struct parser {
 	multipool mp;
 } parser;
 
-void parser_init(parser *p, stream s);
+void parser_init(parser *p, stream s, lex_str_func *on_str);
 void parser_fini(parser *p);
 void parse(parser *p);
 owo_construct parse_func(parser *p);

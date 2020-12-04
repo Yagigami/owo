@@ -27,7 +27,7 @@ void test_token(void)
 		;
 	s.len = strlen(s.buf);
 	s.buf = memcpy(xmalloc(s.len + 16), s.buf, s.len + 16);
-	lexer_init(&l, s);
+	lexer_init(&l, s, lex_str_default, NULL);
 
 	do {
 		lexer_next(&l);
@@ -54,7 +54,7 @@ void test_parser(void)
 		;
 	s.len = strlen(s.buf);
 	s.buf = memcpy(xmalloc(s.len + 16), s.buf, s.len + 16);
-	parser_init(&p, s);
+	parser_init(&p, s, lex_str_default);
 	parse(&p);
 	parser_fini(&p);
 	xfree(s.buf);
@@ -77,7 +77,7 @@ void test_bytecode(void)
 		;
 	s.len = strlen(s.buf);
 	s.buf = memcpy(xmalloc(s.len + 16), s.buf, s.len + 16);
-	parser_init(&p, s);
+	parser_init(&p, s, lex_str_default);
 	parse(&p);
 
 	bcu_init(&u, &system_allocator);

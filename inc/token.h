@@ -61,23 +61,21 @@ typedef struct token {
 		ident_t tid;
 		char (*tstr) [2];
 	};
-	token_kind kind: sizeof (int) * CHAR_BIT - 8;
-	bool is_operator: 1;
-	bool _1         : 1;
-	bool _2         : 1;
-	bool _3         : 1;
-	bool _4         : 1;
-	bool _5         : 1;
-	bool _6         : 1;
-	bool _7         : 1;
+	token_kind kind;
 } token;
 
-typedef struct lexer {
+typedef struct lexer lexer;
+typedef void lex_str_func(lexer *l, char *start);
+
+struct lexer {
 	token tok;
 	char *str;
-} lexer;
+	lex_str_func *on_str;
+	void *ctx;
+};
 
-void lexer_init(lexer *l, stream s);
+lex_str_func lex_str_default;
+void lexer_init(lexer *l, stream s, lex_str_func *on_str, void *ctx);
 void lexer_next(lexer *l);
 void token_print(FILE *f, token t);
 void lexer_fini(lexer *l);

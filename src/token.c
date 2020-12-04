@@ -8,9 +8,11 @@
 #include "token.h"
 
 
-void lexer_init(lexer *l, stream s)
+void lexer_init(lexer *l, stream s, lex_str_func *on_str, void *ctx)
 {
 	l->str = s.buf;
+	l->on_str = on_str;
+	l->ctx = ctx;
 #ifndef NDEBUG
 	assert(s.buf[s.len] == '\0');
 	memset(&l->tok, 0, sizeof l->tok);
@@ -60,8 +62,7 @@ space:  ;
 			fprintf(stderr, "name \"%.*s\" is too long.\n", (int) (l->str - start), start);
 			__builtin_unreachable();
 		}
-		l->tok.tid = ident_from_string(start, l->str);
-		l->tok.kind = TK_NAME;
+		l->on_str(l, start);
 		return;
 	case '0' ... '9':
 		l->tok.kind = TK_INT;

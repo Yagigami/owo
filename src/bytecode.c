@@ -14,10 +14,11 @@ void bcu_dump(FILE *f, const bc_unit *u)
 
 void bcu_dump_fn(FILE *f, const bc_funcdef *fn)
 {
-	fprintf(f, "fn(\"%.*s\")\n", (int) ident_len(&fn->name), fn->name.buf);
+	fprintf(f, "fn(\"%.*s\")\n", (int) ident_len(fn->name), fn->name->buf);
 	sm_iter(bc_instr, fn->insns, ins, {
 		uint8_t repr[4];
-		memcpy(repr, &ins, sizeof ins);
+		memcpy(repr, ins.operand, 4);
+		// memcpy(repr, &ins, sizeof ins);
 		fprintf(f, " %02x %02x %02x %02x\n", repr[0], repr[1], repr[2], repr[3]);
 	});
 	fprintf(f, "\n\n");
@@ -64,7 +65,10 @@ bc_funcdef bct_func(bc_unit *u, struct owo_cfuncdef *owo_fn)
 		return bc_fn;
 		}
 	case OWS_VAR: {
-		fatal_error(ERR_UNKNOWN, "variables are not handled yet!");
+		struct owo_svar *stmt = (struct owo_svar *) it;
+		bc_instr ins = bct_svar(u, stmt);
+		sm_add(u->al, &bc_fn.insns, &ins, sizeof ins);
+		break;
 	}
 	case OWS_NONE: case OWS_NUM:
 	default:
@@ -77,7 +81,16 @@ bc_instr bct_sreturn(bc_unit *u, struct owo_sreturn *stmt)
 {
 	(void) u;
 	assert(*stmt->rval == OWE_INT);
-	bc_instr ins = { .opcode = BC_RETI, .operand = ((struct owo_eint *) stmt->rval) ->val, };
+	bc_instr ins;
+	ins.opcode = BC_RETI;
+	ins.operand[0] = ((struct owo_eint *) stmt->rval)->val;
 	return ins;
+}
+
+bc_instr bct_svar(bc_unit *u, struct owo_svar *stmt)
+{
+	(void) u;
+	assert(stmt->type == owo_tint);
+	fatal_error(ERR_UNKNOWN, "variables are not handled yet!");
 }
 

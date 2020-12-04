@@ -52,7 +52,7 @@ void gx64t_bc(gen_x64 *gen, bc_unit *u)
 			byte_t buf[16];
 			len_t i;
 		case BC_RETI: {
-			i = gen_mov_imm(buf, 00, ins.operand);
+			i = gen_mov_imm(buf, 00, ins.operand[0]);
 			buf[i++] = 0xC3;
 			emit_n(gen, buf, i);
 			break;

@@ -26,10 +26,10 @@ typedef struct ptrmap {
 } ptrmap;
 
 void pmap_init(ptrmap *m, allocator al);
-key_t *pmap_find(ptrmap *m, key_t k, hash_func *fn, cmp_func *cmp);
-key_t *pmap_push(ptrmap *m, key_t k, hash_func *fn);
-key_t *pmap_intern(ptrmap *m, key_t k, hash_func *fn, cmp_func *cmp);
-void pmap_reserve(ptrmap *m, len_t n);
+key_t pmap_find(ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz);
+key_t pmap_push(ptrmap *m, hash_t hash, len_t objsz);
+key_t pmap_intern(ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz);
+void pmap_reserve(ptrmap *m, len_t n, len_t objsz);
 void pmap_fini(ptrmap *m);
 
 
