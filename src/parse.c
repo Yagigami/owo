@@ -89,16 +89,16 @@ void parser_fini(parser *p)
 
 void parse(parser *p)
 {
-	small_buf ctrs = 0;
+	vector decls = {0};
 	lexer_next(&p->l);
 	while (1) {
 		if (match_keyword(p, kw_func)) {
-			owo_construct ctr = parse_func(p);
-			sm_add(&p->mp, &ctrs, &ctr, PTRSZ);
+			owo_decl decl = parse_func(p);
+			vec_add(&p->mp, &decls, &decl, sizeof decl);
 		}
 		else {
 			assert(is_token(p, TK_EOF));
-			p->ast.ctrs = ctrs;
+			p->ast.decls = decls;
 			return;
 		}
 	}
@@ -109,7 +109,7 @@ owo_type parse_type(parser *p)
 	expect_keyword(p, kw_int);
 	owo_type t = owo_tint;
 	while (match_token(p, TK_AT))
-		t = owt_ptr(t);
+		t = type_ptr(t);
 	return t;
 }
 
@@ -118,7 +118,7 @@ owo_expr parse_expr(parser *p)
 	token tok = consume_token(p);
 	switch (tok.kind) {
 	case TK_INT:
-		return owe_int(tok.tint);
+		return expr_int(tok.tint);
 	default:
 		fatal_error(ERR_SYNTAX, "unexpected token %d in expression", tok.kind);
 	}
@@ -133,32 +133,33 @@ owo_stmt parse_stmt(parser *p)
 		owo_type type = parse_type(p);
 		expect_token(p, TK_EQ);
 		owo_expr init = parse_expr(p);
-		stmt = ows_var(name, type, init);
+		owo_decl decl = decl_var(name, type, init);
+		stmt = stmt_decl(decl);
 	} else if (match_keyword(p, kw_return)) {
 		owo_expr rval = parse_expr(p);
-		stmt = ows_sreturn(rval);
+		stmt = stmt_sreturn(rval);
 	} else __builtin_unreachable();
 	expect_token(p, TK_SCOLON);
 	return stmt;
 }
 
-small_buf parse_stmt_block(parser *p)
+fixed_buf parse_stmt_block(parser *p)
 {
-	small_buf body = 0;
+	vector body = {0};
 	expect_token(p, TK_LBRACE);
 	while (!match_token(p, TK_RBRACE)) {
 		owo_stmt stmt = parse_stmt(p);
-		sm_add(&p->mp, &body, &stmt, PTRSZ);
+		vec_add(&p->mp, &body, &stmt, sizeof stmt);
 	}
-	return body;
+	return fb_shrink(&p->mp, body, sizeof (owo_stmt));
 }
 
-owo_construct parse_func(parser *p)
+owo_decl parse_func(parser *p)
 {
 	token tok = expect_token(p, TK_NAME);
 	ident_t name = tok.tid;
 	expect_token(p, TK_LPAREN);
-	small_buf params = 0;
+	vector params = {0};
 	for (int i = 0; !match_token(p, TK_RPAREN); i++) {
 		if (i)
 			expect_token(p, TK_COMMA);
@@ -166,11 +167,11 @@ owo_construct parse_func(parser *p)
 		expect_token(p, TK_COLON);
 		struct owo_param param;
 		param.type = parse_type(p);
-		sm_add(&p->mp, &params, &param, sizeof param);
+		vec_add(&p->mp, &params, &param, sizeof param);
 	}
 	expect_token(p, TK_COLON);
 	owo_type ret = parse_type(p);
-	small_buf body = parse_stmt_block(p);
-	return owc_funcdef(&p->mp, name, ret, params, body);
+	fixed_buf body = parse_stmt_block(p);
+	return decl_funcdef(name, ret, fb_shrink(&p->mp, params, sizeof (struct owo_param)), body);
 }
 

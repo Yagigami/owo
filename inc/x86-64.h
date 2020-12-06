@@ -13,8 +13,8 @@ struct cg_sym {
 };
 
 typedef struct {
-	small_buf insns; // INLINE byte_t[]
-	small_buf syms; // INLINE cg_sym (index bc pointers unstable)
+	fixed_buf insns; // INLINE byte_t[]
+	fixed_buf syms; // INLINE cg_sym (index bc pointers unstable)
 	allocator al;
 } gen_x64;
 

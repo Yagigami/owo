@@ -67,13 +67,13 @@ stream elf_serialize_x64(allocator al, const gen_x64 *gen, const char *file)
 	shdr[SEC_TEXT].sh_flags = SHF_ALLOC | SHF_EXECINSTR;
 	shdr[SEC_TEXT].sh_addr = 0x0; // relocatable file, not executable
 	// shdr[SEC_TEXT].sh_offset
-	shdr[SEC_TEXT].sh_size = sm_len(gen->insns);
+	shdr[SEC_TEXT].sh_size = fb_len(gen->insns);
 	shdr[SEC_TEXT].sh_link = 0x0;
 	shdr[SEC_TEXT].sh_info = 0x0;
 	shdr[SEC_TEXT].sh_addralign = 0x10;
 	shdr[SEC_TEXT].sh_entsize = 0;
 	// section .symtab
-	Elf64_Sym *syms = gen_alloc(al, (3 + sm_len(gen->syms)) * sizeof *syms);
+	Elf64_Sym *syms = gen_alloc(al, (3 + fb_len(gen->syms)) * sizeof *syms);
 	memset(syms, 0, sizeof syms[0]);
 	syms[1].st_name = 1;
 	syms[1].st_info = ELF64_ST_INFO(STB_GLOBAL, STT_FILE);
@@ -97,7 +97,7 @@ stream elf_serialize_x64(allocator al, const gen_x64 *gen, const char *file)
 		+ 1 /* undefined symbol */
 		+ 1 /* file name symbol */
 		+ 1 /* section symbol */
-		+ sm_len(gen->syms)) * sizeof (Elf64_Sym);
+		+ fb_len(gen->syms)) * sizeof (Elf64_Sym);
 	shdr[SEC_SYMTAB].sh_link = SEC_STRTAB; // index of associated string table
 	shdr[SEC_SYMTAB].sh_info = 3; // 1 greater than last local symbol (section thing) 's index
 	shdr[SEC_SYMTAB].sh_addralign = 0x8;
@@ -107,23 +107,24 @@ stream elf_serialize_x64(allocator al, const gen_x64 *gen, const char *file)
 	char *cur = vec_reserve(al, &strtab, 1 /* empty string */, 1);
 	cur[strtab.len++] = '\0';
 	cur = vec_reserve(al, &strtab, strlen(file) + 1, 1);
-	memcpy(cur + strtab.len, file, strlen(file) + 1);
+	memcpy(cur, file, strlen(file) + 1);
 	strtab.len += strlen(file) + 1;
 	len_t syms_idx = 3;
-	sm_iter(struct cg_sym, gen->syms, sym, {
+	for (struct cg_sym *it = fb_mem(gen->syms), *end = it + fb_len(gen->syms); it != end; it++) {
+		struct cg_sym sym = *it;
 		len_t sym_len = ident_len(&sym.name);
 		cur = vec_reserve(al, &strtab, sym_len + 1, 1);
 		memcpy((char *) strtab.mem + strtab.len, sym.name.buf, sym_len);
 		syms[syms_idx].st_name = strtab.len;
 		strtab.len += sym_len;
-		cur[strtab.len++] = '\0';
+		cur[sym_len] = '\0';
 		syms[syms_idx].st_info = ELF64_ST_INFO(STB_GLOBAL, STT_NOTYPE);
 		syms[syms_idx].st_other = STV_DEFAULT;
 		syms[syms_idx].st_shndx = SEC_TEXT;
 		syms[syms_idx].st_value = sym.idx;
 		syms[syms_idx].st_size = sym.size;
 		syms_idx++;
-	});
+	}
 
 	shdr[SEC_STRTAB].sh_name = 15;
 	shdr[SEC_STRTAB].sh_type = SHT_STRTAB;
@@ -157,7 +158,7 @@ stream elf_serialize_x64(allocator al, const gen_x64 *gen, const char *file)
 	v.len += sizeof ehdr;
 	sz = ALIGN_UP_P2(sz + sizeof ehdr, shdr[SEC_TEXT].sh_addralign);
 	shdr[SEC_TEXT].sh_offset = sz;
-	vec_extend(al, &v, sm_mem(gen->insns), shdr[SEC_TEXT].sh_size, 1);
+	vec_extend(al, &v, fb_mem(gen->insns), shdr[SEC_TEXT].sh_size, 1);
 
 	sz = ALIGN_UP_P2(sz + shdr[SEC_TEXT].sh_size, shdr[SEC_TEXT + 1].sh_addralign);
 	pad(al, &v, sz - v.len);

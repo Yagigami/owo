@@ -17,7 +17,7 @@ typedef struct parser {
 void parser_init(parser *p, stream s, lex_str_func *on_str);
 void parser_fini(parser *p);
 void parse(parser *p);
-owo_construct parse_func(parser *p);
+owo_decl parse_func(parser *p);
 owo_stmt parse_stmt(parser *p);
 small_buf parse_stmt_block(parser *p);
 owo_type parse_type(parser *p);

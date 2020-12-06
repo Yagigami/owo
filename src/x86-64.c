@@ -4,14 +4,6 @@
 #include "x86-64.h"
 
 
-static byte_t *emit_n(gen_x64 *gen, const byte_t *mem, len_t n)
-{
-	byte_t *start = sm_reserve(gen->al, &gen->insns, n, sizeof *start);
-	memcpy(start, mem, n);
-	sm_add_len(&gen->insns, n);
-	return start;
-}
-
 static len_t gen_mov_imm(byte_t *dst, int reg, uint64_t val)
 {
 	// ew
@@ -38,49 +30,67 @@ void gx64_init(gen_x64 *gen, allocator al)
 
 void gx64_fini(gen_x64 *gen)
 {
-	gen_free(gen->al, sm_mem(gen->insns), sm_cap(gen->insns));
-	gen_free(gen->al, sm_mem(gen->syms), sm_cap(gen->syms) * sizeof (byte_t *));
+	gen_free(gen->al, fb_mem(gen->insns), fb_len(gen->insns));
+	gen_free(gen->al, fb_mem(gen->syms), fb_len(gen->syms) * sizeof (byte_t *));
 }
 
 void gx64t_bc(gen_x64 *gen, bc_unit *u)
 {
-	struct cg_sym *syms = sm_fit(gen->al, &gen->syms, sm_len(u->funcs), sizeof (bc_funcdef));
-	sm_add_len(&gen->syms, sm_len(u->funcs));
-	sm_iter(bc_funcdef, u->funcs, fn, {
-		len_t idx = sm_len(gen->insns);
-		sm_iter(bc_instr, fn.insns, ins, switch (ins.opcode) {
-			byte_t buf[16];
-			len_t i;
-		case BC_RETI: {
-			i = gen_mov_imm(buf, 00, ins.operand[0]);
-			buf[i++] = 0xC3;
-			emit_n(gen, buf, i);
-			break;
+	len_t len = fb_len(u->funcs);
+	struct cg_sym *syms = gen_alloc(gen->al, len * sizeof *syms);
+	vector insns = {0};
+	for (bc_funcdef *it_f = fb_mem(u->funcs), *end_f = it_f + len; it_f != end_f; it_f++) {
+		bc_funcdef fn = *it_f;
+		len_t idx = insns.len;
+		for (bc_instr *it = fb_mem(fn.insns), *end = it + fb_len(fn.insns); it != end; it++) {
+			bc_instr ins = *it;
+			switch (ins.opcode) {
+				byte_t buf[16];
+				len_t i;
+			case BC_RETI: {
+				i = gen_mov_imm(buf, 00, ins.operand[0]);
+				buf[i++] = 0xC3;
+				vec_extend(gen->al, &insns, buf, i, 1);
+				break;
 			}
-		case BC_UNDEF:
-		default:
-			__builtin_unreachable();
-		});
+			case BC_SETI: {
+				fatal_error(ERR_UNKNOWN, "unhandled yet!");
+			}
+			case BC_BIRTH : {
+				fatal_error(ERR_UNKNOWN, "unhandled yet!");
+			}
+			case BC_DEATH : {
+				fatal_error(ERR_UNKNOWN, "unhandled yet!");
+			}
+			case BC_UNDEF:
+			default:
+				__builtin_unreachable();
+			}
+		}
 		syms->idx  = idx;
-		syms->size = sm_len(gen->insns) - idx;
+		syms->size = insns.len - idx;
 		syms->name = fn.name;
 		syms++;
-	});
+	}
+	gen->syms = fb_set(len, syms - len);
+	gen->insns = fb_shrink(gen->al, insns, 1);
 }
 
 void gx64_dump(FILE *f, const gen_x64 *gen)
 {
-	sm_iter(const struct cg_sym, gen->syms, sym, {
+	for (struct cg_sym *it = fb_mem(gen->syms), *end = it + fb_len(gen->syms); it != end; it++) {
+		struct cg_sym sym = *it;
 		fprintf(f, "%.*s(%d:%d)\n", (int) ident_len(&sym.name), sym.name.buf, sym.idx, sym.size);
-	});
+	}
 	int total = 0;
 	static const int w = 20;
-	sm_iter(const byte_t, gen->insns, byte, {
+	for (byte_t *it = fb_mem(gen->insns), *end = it + fb_len(gen->insns); it != end; it++) {
+		byte_t byte = *it;
 		if (total + 3 > w) {
 			total = 0;
 			fprintf(f, "\n");
 		}
 		fprintf(f, "%02x ", byte);
-	});
+	}
 }
 
