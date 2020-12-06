@@ -9,11 +9,9 @@
 
 static_assert(sizeof (uintptr_t) == 8, "");
 
-// useful for strings, where the pointer isn't aligned
-// though the pointer may have to be aligned for optimization reasons...
 typedef uintptr_t fixed_buf;
-	// bits [48..64[: len
-	// bits [ 0..48[: ptr
+	// bits [ 0..20[ = len
+	// bits [20..64[ = ptr<<4
 
 // may want to try another layout (doesn't require ugly 8-byte immediates)
 //   bits [20..64[: mem
@@ -31,43 +29,47 @@ typedef struct vector {
 	int len, cap;
 } vector;
 
-static inline len_t fb_len(fixed_buf b)              { return b >> 48;                       }
-static inline void *fb_mem(fixed_buf b)              { return (void *) (b & BITS(48));       }
-static inline fixed_buf fb_set(len_t len, void *mem) { return (len << 48) | (uintptr_t) mem; }
+static inline len_t fb_len(fixed_buf b)              { return b & BITS(20); }
+static inline void *fb_mem(fixed_buf b)              { return (void *) ((b >> 20) << 4); }
+static inline fixed_buf fb_set(len_t len, void *mem) { return len | ((uintptr_t) mem << 16); }
+
+fixed_buf fb_shrink(allocator al, vector v, len_t objsz);
 
 typedef const void *restrict obj_t;
 
-static inline len_t sm_len(small_buf b) { return b >> 48;                        }
-static inline len_t sm_cap(small_buf b) { return 1LL << (b & 0xF);               }
-static inline void *sm_mem(small_buf b) { return (void *) (b & BITRANGE(4, 48)); }
+#define BUF_H_DEPREC_SMALL_BUF DEPRECATED("cause too much bugs, and `vector` / `fixed_buf` are always better") 
 
-static inline void sm_add_cap(small_buf *b, len_t log2_cap)
+BUF_H_DEPREC_SMALL_BUF static inline len_t sm_len(small_buf b) { return b >> 48;                        }
+BUF_H_DEPREC_SMALL_BUF static inline len_t sm_cap(small_buf b) { return 1LL << (b & 0xF);               }
+BUF_H_DEPREC_SMALL_BUF static inline void *sm_mem(small_buf b) { return (void *) (b & BITRANGE(4, 48)); }
+
+BUF_H_DEPREC_SMALL_BUF static inline void sm_add_cap(small_buf *b, len_t log2_cap)
 {
 	*b += log2_cap;
 }
 
-static inline small_buf sm_set(len_t len, len_t log2_cap, const void *mem)
+BUF_H_DEPREC_SMALL_BUF static inline small_buf sm_set(len_t len, len_t log2_cap, const void *mem)
 {
 	return (len << 48) | log2_cap | (uintptr_t) mem;
 }
 
-static inline void sm_set_mem(small_buf *b, void *mem)
+BUF_H_DEPREC_SMALL_BUF static inline void sm_set_mem(small_buf *b, void *mem)
 {
 	assert(IS_NICE_PTR16(mem));
 	*b = (*b & ~BITRANGE(4, 48)) | (uintptr_t) mem;
 }
 
-static inline void sm_add_len(small_buf *b, len_t n)
+BUF_H_DEPREC_SMALL_BUF static inline void sm_add_len(small_buf *b, len_t n)
 {
 	assert(n < (1LL << 15) - 1);
 	*b += n << 48;
 }
 
-void *sm_add(allocator al, small_buf *b, obj_t obj, len_t objsz);
-void *sm_resize(allocator al, small_buf *b, len_t objsz);
-void *sm_shrink_into(allocator al, small_buf *restrict dst, small_buf src, len_t objsz);
-void *sm_fit(allocator al, small_buf *b, len_t n, len_t objsz);
-void *sm_reserve(allocator al, small_buf *b, len_t n, len_t objsz);
+BUF_H_DEPREC_SMALL_BUF void *sm_add(allocator al, small_buf *b, obj_t obj, len_t objsz);
+BUF_H_DEPREC_SMALL_BUF void *sm_resize(allocator al, small_buf *b, len_t objsz);
+BUF_H_DEPREC_SMALL_BUF void *sm_shrink_into(allocator al, small_buf *restrict dst, small_buf src, len_t objsz);
+BUF_H_DEPREC_SMALL_BUF void *sm_fit(allocator al, small_buf *b, len_t n, len_t objsz);
+BUF_H_DEPREC_SMALL_BUF void *sm_reserve(allocator al, small_buf *b, len_t n, len_t objsz);
 
 // example use ```c
 // 	sm_iter(float, my_buf, x, {
@@ -87,6 +89,7 @@ void *sm_reserve(allocator al, small_buf *b, len_t n, len_t objsz);
 	} while (0)
 	
 
+// TODO: make this kind of generic function let the user do the copy themselves
 void *vec_add(allocator al, vector *v, obj_t obj, len_t objsz);
 void *vec_fit(allocator al, vector *v, len_t n, len_t objsz);
 void *vec_reserve(allocator al, vector *v, len_t n, len_t objsz);

@@ -91,7 +91,8 @@ void test_bytecode(void)
 	FILE *fp = fopen("foo", "wb");
 	fwrite(f.buf, f.len, 1, fp);
 	fclose(fp);
-	
+
+	xfree(f.buf);	
 	gx64_fini(&g);
 	bcu_fini(&u);
 	parser_fini(&p);

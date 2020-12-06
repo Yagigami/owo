@@ -12,12 +12,11 @@
 
 #define PMAP_MIN_CAP 8
 
-void pmap_init(ptrmap *m, allocator al)
+void pmap_init(ptrmap *m)
 {
 	m->len = 0;
 	m->log2_cap = 0;
 	m->mem = NULL;
-	m->upstream = al;
 }
 
 key_t pmap_find(ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz)
@@ -35,9 +34,9 @@ key_t pmap_find(ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz)
 	}
 }
 
-key_t pmap_push(ptrmap *m, hash_t hash, len_t objsz)
+key_t pmap_push(allocator al, ptrmap *m, hash_t hash, len_t objsz)
 {
-	pmap_reserve(m, m->len + 1, objsz);
+	pmap_reserve(al, m, m->len + 1, objsz);
 	len_t capm1 = (1 << m->log2_cap) - 1;
 	uint8_t *meta = m->mem;
 	for (len_t hi = hash >> 7, lo = PMAP_FULL | (hash & 0x7F),
@@ -49,9 +48,9 @@ key_t pmap_push(ptrmap *m, hash_t hash, len_t objsz)
 	}
 }
 
-key_t pmap_intern(ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz)
+key_t pmap_intern(allocator al, ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz)
 {
-	pmap_reserve(m, m->len + 1, objsz);
+	pmap_reserve(al, m, m->len + 1, objsz);
 	len_t capm1 = (1 << m->log2_cap) - 1;
 	uint8_t *meta = m->mem;
 	uint8_t *buf  = meta + capm1 + 1;
@@ -70,7 +69,16 @@ key_t pmap_intern(ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz)
 	}
 }
 
-void pmap_reserve(ptrmap *m, len_t n, len_t objsz)
+void pmap_delete(ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz)
+{
+	char *entry = pmap_find(m, hash, k, cmp, objsz);
+	char *meta  = m->mem;
+	char *start = meta + (1 << m->log2_cap);
+	len_t idx = (entry - start) / objsz;
+	meta[idx] = PMAP_DELETED;
+}
+
+void pmap_reserve(allocator al, ptrmap *m, len_t n, len_t objsz)
 {
 	len_t cap = 1 << m->log2_cap;
 	if (n < PMAP_MIN_CAP) n = PMAP_MIN_CAP;
@@ -78,12 +86,7 @@ void pmap_reserve(ptrmap *m, len_t n, len_t objsz)
 	if (cap <= n) {
 		len_t l2 = 64 - __builtin_clzll(n);
 		len_t new_cap = 1 << l2;
-		void *mem = gen_realloc(
-				m->upstream,
-				new_cap * (1 + objsz),
-				m->mem,
-				cap * objsz
-		);
+		void *mem = gen_realloc(al, new_cap * (1 + objsz), m->mem, cap * objsz);
 		assert(((intptr_t) mem & 0xF) == 0);
 		memset(mem, PMAP_EMPTY, new_cap);
 		m->mem = mem;
@@ -91,9 +94,9 @@ void pmap_reserve(ptrmap *m, len_t n, len_t objsz)
 	}
 }
 
-void pmap_fini(ptrmap *m)
+void pmap_fini(allocator al, ptrmap *m, len_t objsz)
 {
-	gen_free(m->upstream, m->mem, (1 << m->log2_cap) * PTRSZ);
+	gen_free(al, m->mem, (1 << m->log2_cap) * objsz);
 #ifndef NDEBUG
 	memset(m, 0, sizeof *m);
 #endif

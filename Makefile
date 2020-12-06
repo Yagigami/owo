@@ -19,7 +19,9 @@ WARNINGS := -Wall -Wextra -Wformat=2 -Wformat-overflow=2 -Winit-self     \
 LIB      :=
 LIBD     :=
 
-CFLAGS = -std=c11 -ggdb3 -fPIC $(addprefix -I,$(INCLUDE)) $(WARNINGS) -fanalyzer
+ARCH     := lzcnt
+
+CFLAGS = -std=c11 -ggdb3 -fPIC $(addprefix -I,$(INCLUDE)) $(WARNINGS) -fanalyzer $(addprefix -m,$(ARCH))
 LDFLAGS = $(addprefix -l,$(LIB)) $(addprefix -L,$(LIBD))
 
 ifeq ($(MODE),release)

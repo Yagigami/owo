@@ -4,7 +4,15 @@
 
 #include <assert.h>
 #include <string.h>
+#include <immintrin.h>
 
+
+fixed_buf fb_shrink(allocator al, vector v, len_t objsz)
+{
+	if (v.len == 0) return fb_set(v.len, NULL);
+	void *new = gen_realloc(al, v.len * objsz, v.mem, v.cap * objsz);
+	return fb_set(v.len, new);
+}
 
 void *sm_add(allocator al, small_buf *b, obj_t obj, len_t objsz)
 {
@@ -51,12 +59,7 @@ void *sm_fit(allocator al, small_buf *b, len_t n, len_t objsz)
 {
 	assert(n > 0);
 	small_buf old = *b;
-#ifndef NDEBUG
-	len_t shamt = n != 1 ? 64 - __builtin_clzll(n - 1): 0;
-#else
-	static_assert(64 - __builtin_clzll(0) == 0, ""); // UNDEFINED BEHAVIOR
-	len_t shamt = 64 - __builtin_clzll(n - 1);
-#endif
+	len_t shamt = 64 - __lzcnt64(n - 1);
 	len_t old_cap = sm_cap(old);
 	len_t len     = sm_len(old);
 	len_t cap     = 1LL << shamt;
@@ -76,7 +79,7 @@ void *vec_add(allocator al, vector *v, obj_t obj, len_t objsz)
 	len_t n = v->len + 1;
 	if (n > v->cap)
 		vec_fit(al, v, v->cap ? 2 * v->cap: 1, objsz);
-	void *dst = (char *) v->mem + v->len;
+	void *dst = (char *) v->mem + v->len * objsz;
 	memcpy(dst, obj, objsz);
 	v->len = n;
 	return dst;
@@ -93,13 +96,13 @@ void *vec_fit(allocator al, vector *v, len_t n, len_t objsz)
 
 void *vec_reserve(allocator al, vector *v, len_t n, len_t objsz)
 {
-	return vec_fit(al, v, v->len + n, objsz);
+	return (char *) vec_fit(al, v, v->len + n, objsz) + v->len * objsz;
 }
 
 void vec_extend(allocator al, vector *v, const void *restrict src, len_t n, len_t objsz)
 {
 	char *restrict dst = vec_reserve(al, v, n, objsz);
-	memcpy(dst + v->len * objsz, src, n * objsz);
+	memcpy(dst, src, n * objsz);
 	v->len += n;
 }
 

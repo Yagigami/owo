@@ -44,6 +44,12 @@ ident_t ident_from_string(const char *start, const char *end)
 	return id;
 }
 
+void lex_str_default(lexer *l, char *start)
+{
+	l->tok.tid = ident_from_string(start, l->str);
+	l->tok.kind = TK_NAME;
+}
+
 void lexer_next(lexer *l)
 {
 space:  ;

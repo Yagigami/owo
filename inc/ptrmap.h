@@ -22,15 +22,15 @@ typedef struct ptrmap {
 	void *mem;
 	len_t len: 56;
 	len_t log2_cap: 8;
-	allocator upstream;
 } ptrmap;
 
-void pmap_init(ptrmap *m, allocator al);
+void pmap_init(ptrmap *m);
 key_t pmap_find(ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz);
-key_t pmap_push(ptrmap *m, hash_t hash, len_t objsz);
-key_t pmap_intern(ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz);
-void pmap_reserve(ptrmap *m, len_t n, len_t objsz);
-void pmap_fini(ptrmap *m);
+key_t pmap_push(allocator al, ptrmap *m, hash_t hash, len_t objsz);
+key_t pmap_intern(allocator al, ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz);
+void pmap_delete(ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz);
+void pmap_reserve(allocator al, ptrmap *m, len_t n, len_t objsz);
+void pmap_fini(allocator al, ptrmap *m, len_t objsz);
 
 
 #include "endcpp.h"
