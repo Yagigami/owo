@@ -30,6 +30,7 @@ key_t pmap_push(allocator al, ptrmap *m, hash_t hash, len_t objsz);
 key_t pmap_intern(allocator al, ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz);
 void pmap_delete(ptrmap *m, hash_t hash, key_t k, cmp_func *cmp, len_t objsz);
 void pmap_reserve(allocator al, ptrmap *m, len_t n, len_t objsz);
+void pmap_flush(ptrmap *m);
 void pmap_fini(allocator al, ptrmap *m, len_t objsz);
 
 

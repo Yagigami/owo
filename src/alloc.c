@@ -196,7 +196,7 @@ void mp_fini(multipool *mp)
 
 static len_t mp_biased_l2minsz(const multipool *mp)
 {
-	return (mp->_packed >> 8) & BITS(MULTIPOOL_BIAS);
+	return ((mp->_packed >> 8) & BITS(MULTIPOOL_BIAS)) + MULTIPOOL_BIAS;
 }
 
 static len_t mp_round_up_sz(const multipool *mp, len_t sz)
@@ -208,7 +208,7 @@ static len_t mp_round_up_sz(const multipool *mp, len_t sz)
 static len_t mp_index(const multipool *mp, len_t sz)
 {
 	len_t l2 = 63 - __builtin_clzll(sz);
-	len_t idx = l2 - mp_biased_l2minsz(mp) - MULTIPOOL_BIAS;
+	len_t idx = l2 - mp_biased_l2minsz(mp);
 	if (idx < 0) return 0;
 	return idx;
 }

@@ -12,6 +12,7 @@
 #include "bytecode.h"
 #include "x86-64.h"
 #include "elf-rename-me.h"
+#include "dump.h"
 
 void test_token(void)
 {
@@ -71,6 +72,8 @@ void test_bytecode(void)
 	s.buf = 
 		"func main(): int"
 		"{\n"
+		"	var x: int = 13;\n"
+		"	var y: int = 17;\n"
 		"	return 0;\n"
 		"}\n"
 		"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"

@@ -119,8 +119,10 @@ owo_expr parse_expr(parser *p)
 	switch (tok.kind) {
 	case TK_INT:
 		return expr_int(tok.tint);
+	case TK_NAME:
+		return expr_ident(tok.tid);
 	default:
-		fatal_error(ERR_SYNTAX, "unexpected token %d in expression", tok.kind);
+		fatal_error(ERR_SYNTAX, "unexpected token %d (%c) in expression", tok.kind, tok.kind);
 	}
 }
 

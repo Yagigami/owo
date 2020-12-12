@@ -94,6 +94,12 @@ void pmap_reserve(allocator al, ptrmap *m, len_t n, len_t objsz)
 	}
 }
 
+void pmap_flush(ptrmap *m)
+{
+	if (m->mem) memset(m->mem, PMAP_EMPTY, 1 << m->log2_cap);
+	m->len = 0;
+}
+
 void pmap_fini(allocator al, ptrmap *m, len_t objsz)
 {
 	gen_free(al, m->mem, (1 << m->log2_cap) * objsz);
